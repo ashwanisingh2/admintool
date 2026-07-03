@@ -1,0 +1,257 @@
+<Page
+    x:Class="SysAdminX.DriverManager.Views.DriverManagerView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    xmlns:vm="clr-namespace:SysAdminX.DriverManager.ViewModels"
+    mc:Ignorable="d"
+    Title="Driver Manager"
+    Loaded="OnPageLoaded"
+    d:DataContext="{d:DesignInstance vm:DriverManagerViewModel, IsDesignTimeCreatable=False}">
+
+    <Page.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+
+        <Style x:Key="ErrorText" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsError}" Value="True">
+                    <Setter Property="FontWeight" Value="SemiBold" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </Page.Resources>
+
+    <Grid>
+        <!-- Loading Overlay -->
+        <Grid Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}"
+              Panel.ZIndex="10"
+              Background="{DynamicResource ApplicationBackgroundBrush}">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <ui:ProgressRing IsIndeterminate="True" Width="48" Height="48" />
+                <TextBlock Text="Scanning system drivers..."
+                           Margin="0,16,0,0"
+                           FontSize="14"
+                           HorizontalAlignment="Center"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+            </StackPanel>
+        </Grid>
+
+        <!-- Error State -->
+        <Grid Visibility="{Binding HasError, Converter={StaticResource BoolToVis}}"
+              Panel.ZIndex="5">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <ui:SymbolIcon Symbol="ErrorCircle24" FontSize="48"
+                               Foreground="{DynamicResource SystemFillColorCriticalBrush}" />
+                <TextBlock Text="{Binding ErrorMessage}"
+                           Margin="0,12,0,0"
+                           FontSize="14"
+                           HorizontalAlignment="Center"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                           TextWrapping="Wrap"
+                           MaxWidth="400" />
+                <ui:Button Content="Retry"
+                           Margin="0,16,0,0"
+                           HorizontalAlignment="Center"
+                           Appearance="Primary"
+                           Command="{Binding RefreshCommand}" />
+            </StackPanel>
+        </Grid>
+        <Grid Margin="24">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <Grid Grid.Row="0" Margin="0,0,0,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="Driver Manager"
+                               FontSize="28"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                    <TextBlock Text="Manage, scan, and update Windows hardware drivers"
+                               FontSize="13"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                               Margin="0,4,0,0" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <ui:Button Appearance="Secondary"
+                               Margin="0,0,8,0"
+                               ToolTip="Open Device Manager"
+                               Command="{Binding LaunchDeviceManagerCommand}">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="WindowDevTools24" Margin="0,0,8,0" />
+                            <TextBlock Text="Device Manager" />
+                        </StackPanel>
+                    </ui:Button>
+                    <ui:Button Appearance="Secondary"
+                               Margin="0,0,8,0"
+                               ToolTip="Backup all 3rd-party drivers to a folder"
+                               Command="{Binding ExportDriversCommand}">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="Save24" Margin="0,0,8,0" />
+                            <TextBlock Text="Backup Drivers" />
+                        </StackPanel>
+                    </ui:Button>
+                </StackPanel>
+            </Grid>
+
+            <TabControl Grid.Row="1" Background="Transparent" BorderThickness="0">
+                <TabItem Header="Driver Inventory">
+                    <Grid Margin="0,16,0,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <!-- Filters -->
+                        <Grid Grid.Row="0" Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="300" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <ui:TextBox Grid.Column="0"
+                                        PlaceholderText="Search by name, class, or provider..."
+                                        Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}"
+                                        Icon="Search24" />
+
+                            <CheckBox Grid.Column="1" 
+                                      Content="Hide Microsoft Drivers" 
+                                      IsChecked="{Binding ShowThirdPartyOnly}"
+                                      Margin="16,0,0,0"
+                                      VerticalAlignment="Center" />
+
+                            <ui:Button Grid.Column="3" 
+                                       Appearance="Primary"
+                                       Command="{Binding RefreshCommand}">
+                                <StackPanel Orientation="Horizontal">
+                                    <ui:SymbolIcon Symbol="ArrowSync24" Margin="0,0,8,0" />
+                                    <TextBlock Text="Scan Drivers" />
+                                </StackPanel>
+                            </ui:Button>
+                        </Grid>
+
+                        <!-- Driver Grid -->
+                        <DataGrid Grid.Row="1"
+                                  ItemsSource="{Binding Drivers}"
+                                  AutoGenerateColumns="False"
+                                  CanUserAddRows="False"
+                                  CanUserDeleteRows="False"
+                                  IsReadOnly="True"
+                                  HeadersVisibility="Column"
+                                  GridLinesVisibility="Horizontal"
+                                  HorizontalGridLinesBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                  BorderThickness="1"
+                                  BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                  Background="{DynamicResource CardBackgroundFillColorDefaultBrush}">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Device Name" Binding="{Binding DeviceName}" Width="2.5*" />
+                                <DataGridTextColumn Header="Class" Binding="{Binding ClassName}" Width="1.5*" />
+                                <DataGridTextColumn Header="Provider" Binding="{Binding Provider}" Width="1.5*" />
+                                <DataGridTextColumn Header="Version" Binding="{Binding Version}" Width="1*" />
+                                <DataGridTextColumn Header="Date" Binding="{Binding Date}" Width="1*" />
+                                
+                                <DataGridTemplateColumn Header="Status" Width="1*">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Status}" 
+                                                       Style="{StaticResource ErrorText}" 
+                                                       VerticalAlignment="Center"
+                                                       Margin="12,0,0,0" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </TabItem>
+
+                <TabItem Header="Driver Updates (Scan/Install)">
+                    <Grid Margin="0,16,0,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        
+                        <Grid Grid.Row="0" Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            
+                            <TextBlock Grid.Column="0" 
+                                       Text="Scan for missing or outdated drivers using Windows Update."
+                                       VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                       
+                            <ui:Button Grid.Column="1" 
+                                       Appearance="Secondary"
+                                       Margin="0,0,8,0"
+                                       Command="{Binding ScanUpdatesCommand}">
+                                <StackPanel Orientation="Horizontal">
+                                    <ui:SymbolIcon Symbol="Search24" Margin="0,0,8,0" />
+                                    <TextBlock Text="Scan for Updates" />
+                                </StackPanel>
+                            </ui:Button>
+                            
+                            <ui:Button Grid.Column="2" 
+                                       Appearance="Primary"
+                                       Command="{Binding InstallUpdatesCommand}">
+                                <StackPanel Orientation="Horizontal">
+                                    <ui:SymbolIcon Symbol="ArrowDownload24" Margin="0,0,8,0" />
+                                    <TextBlock Text="Install Updates" />
+                                </StackPanel>
+                            </ui:Button>
+                        </Grid>
+                        
+                        <!-- Missing Updates List -->
+                        <Border Grid.Row="1" 
+                                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" 
+                                BorderThickness="1" 
+                                CornerRadius="4" 
+                                Background="{DynamicResource CardBackgroundFillColorDefaultBrush}">
+                            <Grid>
+                                <!-- Loading state for updates -->
+                                <StackPanel Visibility="{Binding IsScanningUpdates, Converter={StaticResource BoolToVis}}" 
+                                            HorizontalAlignment="Center" 
+                                            VerticalAlignment="Center">
+                                    <ui:ProgressRing IsIndeterminate="True" Width="32" Height="32" />
+                                    <TextBlock Text="Scanning Windows Update for drivers..." Margin="0,12,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                </StackPanel>
+                                
+                                <ListView ItemsSource="{Binding MissingDriverUpdates}"
+                                          BorderThickness="0"
+                                          Background="Transparent"
+                                          Margin="8">
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" Margin="4,8">
+                                                <ui:SymbolIcon Symbol="DeveloperBoard24" Margin="0,0,12,0" Foreground="{DynamicResource SystemAccentColorPrimaryBrush}" />
+                                                <TextBlock Text="{Binding}" VerticalAlignment="Center" FontWeight="Medium" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                </ListView>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </TabItem>
+            </TabControl>
+
+        </Grid>
+    </Grid>
+
+</Page>

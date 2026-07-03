@@ -1,0 +1,178 @@
+<Page
+    x:Class="SysAdminX.PatchManager.Views.PatchManagerView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    xmlns:vm="clr-namespace:SysAdminX.PatchManager.ViewModels"
+    mc:Ignorable="d"
+    Title="Patch Manager"
+    Loaded="OnPageLoaded"
+    d:DataContext="{d:DesignInstance vm:PatchManagerViewModel, IsDesignTimeCreatable=False}">
+
+    <Page.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+    </Page.Resources>
+
+    <Grid>
+        <!-- Loading Overlay -->
+        <Grid Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}"
+              Panel.ZIndex="10"
+              Background="{DynamicResource ApplicationBackgroundBrush}">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <ui:ProgressRing IsIndeterminate="True" Width="48" Height="48" />
+                <TextBlock Text="Scanning Windows Updates history..."
+                           Margin="0,16,0,0"
+                           FontSize="14"
+                           HorizontalAlignment="Center"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+            </StackPanel>
+        </Grid>
+
+        <!-- Error State -->
+        <Grid Visibility="{Binding HasError, Converter={StaticResource BoolToVis}}"
+              Panel.ZIndex="5">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <ui:SymbolIcon Symbol="ErrorCircle24" FontSize="48"
+                               Foreground="{DynamicResource SystemFillColorCriticalBrush}" />
+                <TextBlock Text="{Binding ErrorMessage}"
+                           Margin="0,12,0,0"
+                           FontSize="14"
+                           HorizontalAlignment="Center"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                           TextWrapping="Wrap"
+                           MaxWidth="400" />
+                <ui:Button Content="Retry"
+                           Margin="0,16,0,0"
+                           HorizontalAlignment="Center"
+                           Appearance="Primary"
+                           Command="{Binding RefreshCommand}" />
+            </StackPanel>
+        </Grid>
+
+        <Grid Margin="24">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <Grid Grid.Row="0" Margin="0,0,0,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="Patch Manager"
+                               FontSize="28"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                    <TextBlock Text="View installed updates and manage Windows Update configurations"
+                               FontSize="13"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                               Margin="0,4,0,0" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <ui:Button Appearance="Secondary"
+                               Margin="0,0,8,0"
+                               ToolTip="Open Windows Update settings"
+                               Command="{Binding LaunchWindowsUpdateCommand}">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="ArrowDownload24" Margin="0,0,8,0" />
+                            <TextBlock Text="Check for Updates" />
+                        </StackPanel>
+                    </ui:Button>
+                    <ui:Button Appearance="Primary"
+                               Command="{Binding RefreshCommand}">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="ArrowSync24" Margin="0,0,8,0" />
+                            <TextBlock Text="Refresh History" />
+                        </StackPanel>
+                    </ui:Button>
+                </StackPanel>
+            </Grid>
+
+            <TabControl Grid.Row="2" Margin="0,16,0,0">
+                
+                <!-- Windows Updates Tab -->
+                <TabItem Header="Windows Updates">
+                    <Grid Margin="0,16,0,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        
+                        <Grid Grid.Row="0" Margin="0,0,0,16">
+                            <ui:TextBox PlaceholderText="Search by KB number (e.g. KB503)..."
+                                        Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}"
+                                        Icon="Search24" Width="300" HorizontalAlignment="Left" />
+                        </Grid>
+                        
+                        <DataGrid Grid.Row="1"
+                                  ItemsSource="{Binding Updates}"
+                                  AutoGenerateColumns="False"
+                                  CanUserAddRows="False"
+                                  CanUserDeleteRows="False"
+                                  IsReadOnly="True"
+                                  HeadersVisibility="Column"
+                                  GridLinesVisibility="Horizontal"
+                                  HorizontalGridLinesBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                  BorderThickness="1"
+                                  BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                  Background="{DynamicResource CardBackgroundFillColorDefaultBrush}">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="HotFix ID" Binding="{Binding HotFixId}" Width="1*" />
+                                <DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="2*" />
+                                <DataGridTextColumn Header="Installed On" Binding="{Binding InstalledOn}" Width="1.5*" />
+                                <DataGridTextColumn Header="Installed By" Binding="{Binding InstalledBy}" Width="1.5*" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </TabItem>
+                
+                <!-- Software Manager Tab -->
+                <TabItem Header="Software Updates (Winget)">
+                    <Grid Margin="0,16,0,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,16">
+                            <ui:Button Content="Scan for Software Updates" Appearance="Primary" Command="{Binding ScanSoftwareUpdatesCommand}" />
+                            <ui:Button Content="Update All" Appearance="Secondary" Margin="8,0,0,0" Command="{Binding UpgradeAllSoftwareCommand}" />
+                            <ui:ProgressRing IsIndeterminate="True" Width="24" Height="24" Margin="16,0,0,0" Visibility="{Binding IsScanningSoftware, Converter={StaticResource BoolToVis}}" />
+                        </StackPanel>
+
+                        <DataGrid Grid.Row="1"
+                                  ItemsSource="{Binding SoftwareUpdates}"
+                                  AutoGenerateColumns="False"
+                                  CanUserAddRows="False"
+                                  IsReadOnly="True"
+                                  HeadersVisibility="Column"
+                                  GridLinesVisibility="Horizontal"
+                                  HorizontalGridLinesBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                  BorderThickness="1"
+                                  BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                  Background="{DynamicResource CardBackgroundFillColorDefaultBrush}">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="1.5*" />
+                                <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="2*" />
+                                <DataGridTextColumn Header="Current Version" Binding="{Binding Version}" Width="1*" />
+                                <DataGridTextColumn Header="Available Version" Binding="{Binding AvailableVersion}" Width="1*" />
+                                <DataGridTextColumn Header="Source" Binding="{Binding Source}" Width="1*" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </TabItem>
+                
+            </TabControl>
+
+        </Grid>
+    </Grid>
+
+</Page>

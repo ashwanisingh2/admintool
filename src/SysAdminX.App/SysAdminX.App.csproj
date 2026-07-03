@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <OutputType>WinExe</OutputType>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.0" />
+    <PackageReference Include="Serilog.Extensions.Logging" Version="9.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+    <PackageReference Include="WPF-UI" Version="3.0.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SysAdminX.Core\SysAdminX.Core.csproj" />
+    <ProjectReference Include="..\SysAdminX.Shell\SysAdminX.Shell.csproj" />
+    <ProjectReference Include="..\SysAdminX.Infrastructure\SysAdminX.Infrastructure.csproj" />
+    <ProjectReference Include="..\SysAdminX.Data\SysAdminX.Data.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.Dashboard\SysAdminX.Dashboard.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.DeviceDetails\SysAdminX.DeviceDetails.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.DriverManager\SysAdminX.DriverManager.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.PatchManager\SysAdminX.PatchManager.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.NetworkToolkit\SysAdminX.NetworkToolkit.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.Troubleshooting\SysAdminX.Troubleshooting.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.AIAssistant\SysAdminX.AIAssistant.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.Reports\SysAdminX.Reports.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.Settings\SysAdminX.Settings.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.LogsViewer\SysAdminX.LogsViewer.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.SecurityCenter\SysAdminX.SecurityCenter.csproj" />
+
+    <ProjectReference Include="..\Modules\SysAdminX.RemoteSupport\SysAdminX.RemoteSupport.csproj" />
+  </ItemGroup>
+
+</Project>

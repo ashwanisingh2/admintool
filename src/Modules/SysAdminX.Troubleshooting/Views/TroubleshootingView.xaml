@@ -1,0 +1,151 @@
+<Page
+    x:Class="SysAdminX.Troubleshooting.Views.TroubleshootingView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    xmlns:vm="clr-namespace:SysAdminX.Troubleshooting.ViewModels"
+    mc:Ignorable="d"
+    Title="Troubleshooting"
+    d:DataContext="{d:DesignInstance vm:TroubleshootingViewModel, IsDesignTimeCreatable=False}">
+
+    <Page.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+    </Page.Resources>
+
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Grid Grid.Row="0" Margin="0,0,0,20">
+            <StackPanel>
+                <TextBlock Text="Windows Troubleshooting"
+                           FontSize="28"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                <TextBlock Text="Fix common issues, run diagnostics, and clear system junk."
+                           FontSize="13"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                           Margin="0,4,0,0" />
+            </StackPanel>
+        </Grid>
+
+        <!-- Main Content -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*" />
+                <ColumnDefinition Width="24" />
+                <ColumnDefinition Width="1.5*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Actions Panel -->
+            <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    
+                    <ui:TextBlock FontTypography="Subtitle" Text="System File Checker" Margin="0,0,0,12" />
+                    <ui:CardAction Command="{Binding RunSfcCommand}" Margin="0,0,0,24">
+                        <StackPanel>
+                            <TextBlock Text="Run SFC /scannow" FontWeight="SemiBold" />
+                            <TextBlock Text="Scans the integrity of all protected system files and replaces incorrect versions with correct Microsoft versions."
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       TextWrapping="Wrap" Margin="0,4,0,0" />
+                        </StackPanel>
+                    </ui:CardAction>
+
+                    <ui:TextBlock FontTypography="Subtitle" Text="Deployment Image Servicing (DISM)" Margin="0,0,0,12" />
+                    <ui:CardAction Command="{Binding RunDismCheckCommand}" Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="Check Image Health" FontWeight="SemiBold" />
+                            <TextBlock Text="Quickly checks whether the Windows image has been flagged as corrupted by a failed process."
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       TextWrapping="Wrap" Margin="0,4,0,0" />
+                        </StackPanel>
+                    </ui:CardAction>
+                    <ui:CardAction Command="{Binding RunDismRestoreCommand}" Margin="0,0,0,24">
+                        <StackPanel>
+                            <TextBlock Text="Restore Image Health" FontWeight="SemiBold" />
+                            <TextBlock Text="Scans the Windows image for corruption and repairs it automatically using Windows Update."
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       TextWrapping="Wrap" Margin="0,4,0,0" />
+                        </StackPanel>
+                    </ui:CardAction>
+
+                    <ui:TextBlock FontTypography="Subtitle" Text="Storage &amp; Power" Margin="0,0,0,12" />
+                    <ui:CardAction Command="{Binding ClearTempCommand}" Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="Clear Temporary Files" FontWeight="SemiBold" />
+                            <TextBlock Text="Safely deletes files in both User and System temporary directories to free up space."
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       TextWrapping="Wrap" Margin="0,4,0,0" />
+                        </StackPanel>
+                    </ui:CardAction>
+                    
+                    <Grid Margin="0,0,0,24">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="12" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <ui:Button Grid.Column="0" Content="Disable Fast Startup" Command="{Binding ToggleFastStartupCommand}" CommandParameter="false" HorizontalAlignment="Stretch" Appearance="Secondary" />
+                        <ui:Button Grid.Column="2" Content="Enable Fast Startup" Command="{Binding ToggleFastStartupCommand}" CommandParameter="true" HorizontalAlignment="Stretch" Appearance="Primary" />
+                    </Grid>
+
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Action History -->
+            <Border Grid.Column="2" 
+                    Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="16">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    
+                    <TextBlock Grid.Row="0" 
+                               Text="Action History" 
+                               FontWeight="SemiBold" 
+                               FontSize="16" 
+                               Margin="0,0,0,16" />
+                               
+                    <ListView Grid.Row="1" 
+                              ItemsSource="{Binding ActionHistory}" 
+                              BorderThickness="0"
+                              Background="Transparent"
+                              ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="0,8">
+                                    <StackPanel Orientation="Horizontal">
+                                        <ui:SymbolIcon Symbol="CheckmarkCircle24" 
+                                                       Foreground="{DynamicResource SystemFillColorSuccessBrush}" 
+                                                       Visibility="{Binding IsSuccess, Converter={StaticResource BoolToVis}}" 
+                                                       Margin="0,0,8,0" />
+                                        <TextBlock Text="{Binding ActionName}" FontWeight="SemiBold" />
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding OutputMessage}" 
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                                               TextWrapping="Wrap" 
+                                               Margin="0,4,0,0"
+                                               FontSize="12" />
+                                    <TextBlock Text="{Binding Timestamp, StringFormat='HH:mm:ss'}" 
+                                               Foreground="{DynamicResource TextFillColorDisabledBrush}" 
+                                               FontSize="11" 
+                                               Margin="0,4,0,0" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</Page>

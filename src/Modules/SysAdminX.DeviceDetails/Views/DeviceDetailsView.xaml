@@ -1,0 +1,398 @@
+<Page
+    x:Class="SysAdminX.DeviceDetails.Views.DeviceDetailsView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    xmlns:vm="clr-namespace:SysAdminX.DeviceDetails.ViewModels"
+    mc:Ignorable="d"
+    Title="Device Details"
+    Loaded="OnPageLoaded"
+    d:DataContext="{d:DesignInstance vm:DeviceDetailsViewModel, IsDesignTimeCreatable=False}">
+
+    <Page.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+
+        <Style x:Key="InfoCard" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="20" />
+            <Setter Property="Margin" Value="6" />
+        </Style>
+
+        <Style x:Key="SectionHeader" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+            <Setter Property="Margin" Value="0,0,0,16" />
+        </Style>
+
+        <Style x:Key="LabelText" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+            <Setter Property="Margin" Value="0,4,8,4" />
+        </Style>
+
+        <Style x:Key="ValueText" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+            <Setter Property="FontWeight" Value="Medium" />
+            <Setter Property="Margin" Value="0,4,0,4" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+    </Page.Resources>
+
+    <Grid>
+        <!-- Loading Overlay -->
+        <Grid Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}"
+              Panel.ZIndex="10"
+              Background="{DynamicResource ApplicationBackgroundBrush}">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <ui:ProgressRing IsIndeterminate="True" Width="48" Height="48" />
+                <TextBlock Text="Gathering device information..."
+                           Margin="0,16,0,0"
+                           FontSize="14"
+                           HorizontalAlignment="Center"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+            </StackPanel>
+        </Grid>
+
+        <!-- Error State -->
+        <Grid Visibility="{Binding HasError, Converter={StaticResource BoolToVis}}"
+              Panel.ZIndex="5">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <ui:SymbolIcon Symbol="ErrorCircle24" FontSize="48"
+                               Foreground="{DynamicResource SystemFillColorCriticalBrush}" />
+                <TextBlock Text="{Binding ErrorMessage}"
+                           Margin="0,12,0,0"
+                           FontSize="14"
+                           HorizontalAlignment="Center"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                           TextWrapping="Wrap"
+                           MaxWidth="400" />
+                <ui:Button Content="Retry"
+                           Margin="0,16,0,0"
+                           HorizontalAlignment="Center"
+                           Appearance="Primary"
+                           Command="{Binding RefreshCommand}" />
+            </StackPanel>
+        </Grid>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="24" PanningMode="VerticalOnly" CanContentScroll="True">
+            <StackPanel>
+                <!-- Header -->
+                <Grid Margin="0,0,0,20">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="Device Details"
+                                   FontSize="28"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                        <TextBlock Text="Comprehensive hardware and operating system inventory"
+                                   FontSize="13"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   Margin="0,4,0,0" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <ui:Button Appearance="Secondary"
+                                   Margin="0,0,8,0"
+                                   ToolTip="Export to PDF (Coming Soon)">
+                            <StackPanel Orientation="Horizontal">
+                                <ui:SymbolIcon Symbol="DocumentPdf24" Margin="0,0,8,0" />
+                                <TextBlock Text="Export" />
+                            </StackPanel>
+                        </ui:Button>
+                        <ui:Button Appearance="Primary"
+                                   Command="{Binding RefreshCommand}">
+                            <StackPanel Orientation="Horizontal">
+                                <ui:SymbolIcon Symbol="ArrowSync24" Margin="0,0,8,0" />
+                                <TextBlock Text="Refresh" />
+                            </StackPanel>
+                        </ui:Button>
+                    </StackPanel>
+                </Grid>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    
+                    <!-- Computer Info -->
+                    <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource InfoCard}" VerticalAlignment="Top">
+                        <StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <ui:SymbolIcon Symbol="Desktop24" FontSize="20" Margin="0,0,12,16" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                                <TextBlock Grid.Column="1" Text="SYSTEM OVERVIEW" Style="{StaticResource SectionHeader}" />
+                            </Grid>
+                            
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Computer Name:" Style="{StaticResource LabelText}" />
+                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding DeviceDetails.Computer.Name, FallbackValue='Loading...'}" Style="{StaticResource ValueText}" />
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Domain:" Style="{StaticResource LabelText}" />
+                                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding DeviceDetails.Computer.Domain}" Style="{StaticResource ValueText}" />
+
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Workgroup:" Style="{StaticResource LabelText}" />
+                                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding DeviceDetails.Computer.Workgroup}" Style="{StaticResource ValueText}" />
+
+                                <TextBlock Grid.Row="3" Grid.Column="0" Text="Manufacturer:" Style="{StaticResource LabelText}" />
+                                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding DeviceDetails.Computer.Manufacturer}" Style="{StaticResource ValueText}" />
+
+                                <TextBlock Grid.Row="4" Grid.Column="0" Text="Model:" Style="{StaticResource LabelText}" />
+                                <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding DeviceDetails.Computer.Model}" Style="{StaticResource ValueText}" />
+
+                                <TextBlock Grid.Row="5" Grid.Column="0" Text="Serial Number:" Style="{StaticResource LabelText}" />
+                                <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding DeviceDetails.Computer.SerialNumber}" Style="{StaticResource ValueText}" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Windows OS Info -->
+                    <Border Grid.Row="0" Grid.Column="1" Style="{StaticResource InfoCard}" VerticalAlignment="Top">
+                        <StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <ui:SymbolIcon Symbol="Window24" FontSize="20" Margin="0,0,12,16" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                                <TextBlock Grid.Column="1" Text="OPERATING SYSTEM" Style="{StaticResource SectionHeader}" />
+                            </Grid>
+                            
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Edition:" Style="{StaticResource LabelText}" />
+                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding DeviceDetails.Windows.Edition, FallbackValue='Loading...'}" Style="{StaticResource ValueText}" />
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Version:" Style="{StaticResource LabelText}" />
+                                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding DeviceDetails.Windows.Version}" Style="{StaticResource ValueText}" />
+
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Build Number:" Style="{StaticResource LabelText}" />
+                                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding DeviceDetails.Windows.BuildNumber}" Style="{StaticResource ValueText}" />
+
+                                <TextBlock Grid.Row="3" Grid.Column="0" Text="Architecture:" Style="{StaticResource LabelText}" />
+                                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding DeviceDetails.Windows.Architecture}" Style="{StaticResource ValueText}" />
+
+                                <TextBlock Grid.Row="4" Grid.Column="0" Text="Install Date:" Style="{StaticResource LabelText}" />
+                                <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding DeviceDetails.Windows.InstallDate}" Style="{StaticResource ValueText}" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- CPU Info -->
+                    <Border Grid.Row="1" Grid.Column="0" Style="{StaticResource InfoCard}" VerticalAlignment="Top">
+                        <StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <ui:SymbolIcon Symbol="Desktop24" FontSize="20" Margin="0,0,12,16" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                                <TextBlock Grid.Column="1" Text="PROCESSOR" Style="{StaticResource SectionHeader}" />
+                            </Grid>
+                            
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Name:" Style="{StaticResource LabelText}" />
+                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding DeviceDetails.Cpu.Name, FallbackValue='Loading...'}" Style="{StaticResource ValueText}" />
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Cores:" Style="{StaticResource LabelText}" />
+                                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding DeviceDetails.Cpu.Cores}" Style="{StaticResource ValueText}" />
+
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Logical Processors:" Style="{StaticResource LabelText}" />
+                                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding DeviceDetails.Cpu.Threads}" Style="{StaticResource ValueText}" />
+
+                                <TextBlock Grid.Row="3" Grid.Column="0" Text="Architecture:" Style="{StaticResource LabelText}" />
+                                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding DeviceDetails.Cpu.Architecture}" Style="{StaticResource ValueText}" />
+
+                                <TextBlock Grid.Row="4" Grid.Column="0" Text="L3 Cache:" Style="{StaticResource LabelText}" />
+                                <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding DeviceDetails.Cpu.L3Cache}" Style="{StaticResource ValueText}" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- RAM Info -->
+                    <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource InfoCard}" VerticalAlignment="Top">
+                        <StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <ui:SymbolIcon Symbol="DeveloperBoard24" FontSize="20" Margin="0,0,12,16" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                                <TextBlock Grid.Column="1" Text="MEMORY (RAM)" Style="{StaticResource SectionHeader}" />
+                            </Grid>
+                            
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Total Capacity:" Style="{StaticResource LabelText}" />
+                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding DeviceDetails.Ram.TotalCapacity, FallbackValue='Loading...'}" Style="{StaticResource ValueText}" />
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Speed:" Style="{StaticResource LabelText}" />
+                                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding DeviceDetails.Ram.ConfiguredClockSpeed, StringFormat='{}{0} MHz'}" Style="{StaticResource ValueText}" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- GPU Info -->
+                    <Border Grid.Row="2" Grid.Column="0" Style="{StaticResource InfoCard}" VerticalAlignment="Top">
+                        <StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <ui:SymbolIcon Symbol="Glance24" FontSize="20" Margin="0,0,12,16" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                                <TextBlock Grid.Column="1" Text="GRAPHICS" Style="{StaticResource SectionHeader}" />
+                            </Grid>
+
+                            <ItemsControl ItemsSource="{Binding DeviceDetails.Gpus}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,0,0,12">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="120" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                            </Grid.RowDefinitions>
+
+                                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Adapter Name:" Style="{StaticResource LabelText}" />
+                                            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Name}" Style="{StaticResource ValueText}" />
+
+                                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Video Memory:" Style="{StaticResource LabelText}" />
+                                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding AdapterRAM}" Style="{StaticResource ValueText}" />
+
+                                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Driver Version:" Style="{StaticResource LabelText}" />
+                                            <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding DriverVersion}" Style="{StaticResource ValueText}" />
+
+                                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Resolution:" Style="{StaticResource LabelText}" />
+                                            <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding Resolution}" Style="{StaticResource ValueText}" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Motherboard / BIOS Info -->
+                    <Border Grid.Row="2" Grid.Column="1" Style="{StaticResource InfoCard}" VerticalAlignment="Top">
+                        <StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <ui:SymbolIcon Symbol="Board24" FontSize="20" Margin="0,0,12,16" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                                <TextBlock Grid.Column="1" Text="MOTHERBOARD &amp; BIOS" Style="{StaticResource SectionHeader}" />
+                            </Grid>
+                            
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="12" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Baseboard Mfg:" Style="{StaticResource LabelText}" />
+                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding DeviceDetails.Motherboard.Manufacturer, FallbackValue='Loading...'}" Style="{StaticResource ValueText}" />
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Baseboard Prod:" Style="{StaticResource LabelText}" />
+                                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding DeviceDetails.Motherboard.Product}" Style="{StaticResource ValueText}" />
+
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Baseboard Ver:" Style="{StaticResource LabelText}" />
+                                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding DeviceDetails.Motherboard.Version}" Style="{StaticResource ValueText}" />
+
+                                <TextBlock Grid.Row="4" Grid.Column="0" Text="BIOS Vendor:" Style="{StaticResource LabelText}" />
+                                <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding DeviceDetails.Bios.Vendor}" Style="{StaticResource ValueText}" />
+
+                                <TextBlock Grid.Row="5" Grid.Column="0" Text="BIOS Version:" Style="{StaticResource LabelText}" />
+                                <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding DeviceDetails.Bios.Version}" Style="{StaticResource ValueText}" />
+
+                                <TextBlock Grid.Row="6" Grid.Column="0" Text="Release Date:" Style="{StaticResource LabelText}" />
+                                <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding DeviceDetails.Bios.ReleaseDate}" Style="{StaticResource ValueText}" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                </Grid>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+
+</Page>

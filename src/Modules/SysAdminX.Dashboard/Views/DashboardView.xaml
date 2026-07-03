@@ -1,0 +1,526 @@
+<Page
+    x:Class="SysAdminX.Dashboard.Views.DashboardView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
+    xmlns:vm="clr-namespace:SysAdminX.Dashboard.ViewModels"
+    mc:Ignorable="d"
+    Title="Dashboard"
+    Loaded="OnPageLoaded"
+    d:DataContext="{d:DesignInstance vm:DashboardViewModel, IsDesignTimeCreatable=False}">
+
+    <Page.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+
+        <!-- Card Style -->
+        <Style x:Key="DashboardCard" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="20" />
+            <Setter Property="Margin" Value="6" />
+        </Style>
+
+        <!-- Section Title Style -->
+        <Style x:Key="SectionTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+            <Setter Property="Margin" Value="0,0,0,12" />
+            <Setter Property="Margin" Value="0,0,0,12" />
+        </Style>
+
+        <!-- Metric Value Style -->
+        <Style x:Key="MetricValue" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="32" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+        </Style>
+
+        <!-- Metric Unit Style -->
+        <Style x:Key="MetricUnit" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+            <Setter Property="Margin" Value="4,0,0,4" />
+            <Setter Property="VerticalAlignment" Value="Bottom" />
+        </Style>
+
+        <!-- Info Label Style -->
+        <Style x:Key="InfoLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorTertiaryBrush}" />
+            <Setter Property="Margin" Value="0,2" />
+        </Style>
+
+        <!-- Info Value Style -->
+        <Style x:Key="InfoValue" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+            <Setter Property="Margin" Value="0,2" />
+        </Style>
+
+        <!-- Progress Ring Usage Style -->
+        <Style x:Key="UsageRing" TargetType="ui:ProgressRing">
+            <Setter Property="Width" Value="80" />
+            <Setter Property="Height" Value="80" />
+            <Setter Property="IsIndeterminate" Value="False" />
+        </Style>
+    </Page.Resources>
+
+    <Grid>
+        <!-- Loading Overlay -->
+        <Grid Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}"
+              Panel.ZIndex="10"
+              Background="{DynamicResource ApplicationBackgroundBrush}">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <ui:ProgressRing IsIndeterminate="True" Width="48" Height="48" />
+                <TextBlock Text="Loading system information..."
+                           Margin="0,16,0,0"
+                           FontSize="14"
+                           HorizontalAlignment="Center"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+            </StackPanel>
+        </Grid>
+
+        <!-- Error State -->
+        <Grid Visibility="{Binding HasError, Converter={StaticResource BoolToVis}}"
+              Panel.ZIndex="5">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <ui:SymbolIcon Symbol="ErrorCircle24" FontSize="48"
+                               Foreground="{DynamicResource SystemFillColorCriticalBrush}" />
+                <TextBlock Text="{Binding ErrorMessage}"
+                           Margin="0,12,0,0"
+                           FontSize="14"
+                           HorizontalAlignment="Center"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                           TextWrapping="Wrap"
+                           MaxWidth="400" />
+                <ui:Button Content="Retry"
+                           Margin="0,16,0,0"
+                           HorizontalAlignment="Center"
+                           Appearance="Primary"
+                           Command="{Binding RefreshCommand}" />
+            </StackPanel>
+        </Grid>
+
+        <!-- Main Dashboard Content -->
+        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                      Padding="24" PanningMode="VerticalOnly" CanContentScroll="True">
+            <StackPanel>
+
+                <!-- Page Header -->
+                <Grid Margin="0,0,0,20">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="System Dashboard"
+                                   FontSize="28"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                        <TextBlock FontSize="13"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   Margin="0,4,0,0">
+                            <Run Text="Real-time system health monitoring — " />
+                            <Run Text="{Binding ComputerName, FallbackValue='Loading...'}" />
+                        </TextBlock>
+                    </StackPanel>
+
+                    <ui:Button Grid.Column="1"
+                               Appearance="Secondary"
+                               Command="{Binding RefreshCommand}"
+                               VerticalAlignment="Center"
+                               ToolTip="Refresh all data">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="ArrowSync24" Margin="0,0,8,0" />
+                            <TextBlock Text="Refresh" />
+                        </StackPanel>
+                    </ui:Button>
+                </Grid>
+
+                <!-- Row 1: CPU, RAM, Disk, Network cards -->
+                <UniformGrid Columns="4" Margin="0,0,0,4">
+
+                    <!-- CPU Card -->
+                    <Border Style="{StaticResource DashboardCard}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="100" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Text="CPU USAGE" Style="{StaticResource SectionTitle}" />
+
+                            <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
+                                <TextBlock Style="{StaticResource MetricValue}">
+                                    <TextBlock.Text>
+                                        <Binding Path="CpuUsage" StringFormat="{}{0:F1}" FallbackValue="0.0" />
+                                    </TextBlock.Text>
+                                </TextBlock>
+                                <TextBlock Text="%" Style="{StaticResource MetricUnit}" />
+                            </StackPanel>
+
+                            <lvc:CartesianChart Grid.Row="2"
+                                                Series="{Binding CpuSeries}"
+                                                XAxes="{Binding XAxes}"
+                                                YAxes="{Binding YAxes}"
+                                                TooltipPosition="Hidden"
+                                                ZoomMode="None"
+                                                Margin="0" />
+
+                            <StackPanel Grid.Row="3" Margin="0,8,0,0">
+                                <TextBlock Text="{Binding CpuName, FallbackValue='Loading...'}"
+                                           Style="{StaticResource InfoLabel}"
+                                           TextTrimming="CharacterEllipsis" />
+                                <TextBlock Style="{StaticResource InfoLabel}">
+                                    <Run Text="{Binding CpuCoresInfo, FallbackValue=''}" />
+                                    <Run Text=" · " />
+                                    <Run Text="{Binding CpuSpeedInfo, FallbackValue=''}" />
+                                </TextBlock>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- RAM Card -->
+                    <Border Style="{StaticResource DashboardCard}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="100" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Text="MEMORY USAGE" Style="{StaticResource SectionTitle}" />
+
+                            <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
+                                <TextBlock Style="{StaticResource MetricValue}">
+                                    <TextBlock.Text>
+                                        <Binding Path="RamUsage" StringFormat="{}{0:F1}" FallbackValue="0.0" />
+                                    </TextBlock.Text>
+                                </TextBlock>
+                                <TextBlock Text="%" Style="{StaticResource MetricUnit}" />
+                            </StackPanel>
+
+                            <lvc:CartesianChart Grid.Row="2"
+                                                Series="{Binding RamSeries}"
+                                                XAxes="{Binding XAxes}"
+                                                YAxes="{Binding YAxes}"
+                                                TooltipPosition="Hidden"
+                                                ZoomMode="None"
+                                                Margin="0" />
+
+                            <StackPanel Grid.Row="3" Margin="0,8,0,0">
+                                <TextBlock Style="{StaticResource InfoLabel}">
+                                    <Run Text="Used: " />
+                                    <Run Text="{Binding RamUsedText, FallbackValue='0 GB'}"
+                                         Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                    <Run Text=" / " />
+                                    <Run Text="{Binding RamTotalText, FallbackValue='0 GB'}" />
+                                </TextBlock>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Disk Card -->
+                    <Border Style="{StaticResource DashboardCard}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Style="{StaticResource SectionTitle}">
+                                <Run Text="DISK " />
+                                <Run Text="{Binding DiskDriveLetter, FallbackValue='C:'}" />
+                            </TextBlock>
+
+                            <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
+                                <TextBlock Style="{StaticResource MetricValue}">
+                                    <TextBlock.Text>
+                                        <Binding Path="DiskUsage" StringFormat="{}{0:F1}" FallbackValue="0.0" />
+                                    </TextBlock.Text>
+                                </TextBlock>
+                                <TextBlock Text="%" Style="{StaticResource MetricUnit}" />
+                            </StackPanel>
+
+                            <Grid Grid.Row="2" VerticalAlignment="Center">
+                                <ui:ProgressRing Style="{StaticResource UsageRing}"
+                                                 Progress="{Binding DiskUsage}"
+                                                 HorizontalAlignment="Center" />
+                            </Grid>
+
+                            <StackPanel Grid.Row="3" Margin="0,8,0,0">
+                                <TextBlock Style="{StaticResource InfoLabel}">
+                                    <Run Text="Used: " />
+                                    <Run Text="{Binding DiskUsedText, FallbackValue='0 GB'}"
+                                         Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                    <Run Text=" / " />
+                                    <Run Text="{Binding DiskTotalText, FallbackValue='0 GB'}" />
+                                </TextBlock>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Network Card -->
+                    <Border Style="{StaticResource DashboardCard}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Text="NETWORK" Style="{StaticResource SectionTitle}" />
+
+                            <StackPanel Grid.Row="1" VerticalAlignment="Center">
+                                <!-- Upload -->
+                                <Border Background="{DynamicResource SubtleFillColorSecondaryBrush}"
+                                        CornerRadius="6"
+                                        Padding="12,10"
+                                        Margin="0,0,0,8">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <ui:SymbolIcon Grid.Column="0" Symbol="ArrowUpload24"
+                                                       Foreground="{DynamicResource SystemFillColorSuccessBrush}"
+                                                       Margin="0,0,8,0" />
+                                        <TextBlock Grid.Column="1" Text="Upload"
+                                                   Style="{StaticResource InfoLabel}"
+                                                   VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="2"
+                                                   Text="{Binding NetworkSentText, FallbackValue='0 B/s'}"
+                                                   FontWeight="SemiBold"
+                                                   FontSize="13"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                    </Grid>
+                                </Border>
+
+                                <!-- Download -->
+                                <Border Background="{DynamicResource SubtleFillColorSecondaryBrush}"
+                                        CornerRadius="6"
+                                        Padding="12,10"
+                                        Margin="0,0,0,8">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <ui:SymbolIcon Grid.Column="0" Symbol="ArrowDownload24"
+                                                       Foreground="{DynamicResource SystemFillColorCautionBrush}"
+                                                       Margin="0,0,8,0" />
+                                        <TextBlock Grid.Column="1" Text="Download"
+                                                   Style="{StaticResource InfoLabel}"
+                                                   VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="2"
+                                                   Text="{Binding NetworkReceivedText, FallbackValue='0 B/s'}"
+                                                   FontWeight="SemiBold"
+                                                   FontSize="13"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                    </Grid>
+                                </Border>
+
+                                <!-- Uptime -->
+                                <Border Background="{DynamicResource SubtleFillColorSecondaryBrush}"
+                                        CornerRadius="6"
+                                        Padding="12,10">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <ui:SymbolIcon Grid.Column="0" Symbol="Clock24"
+                                                       Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"
+                                                       Margin="0,0,8,0" />
+                                        <TextBlock Grid.Column="1" Text="Uptime"
+                                                   Style="{StaticResource InfoLabel}"
+                                                   VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="2"
+                                                   Text="{Binding UptimeText, FallbackValue='0m 0s'}"
+                                                   FontWeight="SemiBold"
+                                                   FontSize="13"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                </UniformGrid>
+
+                <!-- Row 2: Windows Info + Disk Drives -->
+                <UniformGrid Columns="2" Margin="0,0,0,4">
+
+                    <!-- Windows Info Card -->
+                    <Border Style="{StaticResource DashboardCard}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Text="WINDOWS INFORMATION" Style="{StaticResource SectionTitle}" />
+
+                            <Grid Grid.Row="1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="16" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Edition" Style="{StaticResource InfoLabel}" />
+                                <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding WindowsEdition, FallbackValue='Loading...'}" Style="{StaticResource InfoValue}" />
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Version" Style="{StaticResource InfoLabel}" />
+                                <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding WindowsVersion, FallbackValue=''}" Style="{StaticResource InfoValue}" />
+
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Build" Style="{StaticResource InfoLabel}" />
+                                <TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding WindowsBuild, FallbackValue=''}" Style="{StaticResource InfoValue}" />
+
+                                <TextBlock Grid.Row="3" Grid.Column="0" Text="Architecture" Style="{StaticResource InfoLabel}" />
+                                <TextBlock Grid.Row="3" Grid.Column="2" Text="{Binding ArchitectureText, FallbackValue=''}" Style="{StaticResource InfoValue}" />
+
+                                <TextBlock Grid.Row="4" Grid.Column="0" Text="Computer" Style="{StaticResource InfoLabel}" />
+                                <TextBlock Grid.Row="4" Grid.Column="2" Text="{Binding ComputerName, FallbackValue=''}" Style="{StaticResource InfoValue}" />
+
+                                <TextBlock Grid.Row="5" Grid.Column="0" Text="Domain" Style="{StaticResource InfoLabel}" />
+                                <TextBlock Grid.Row="5" Grid.Column="2" Text="{Binding DomainWorkgroup, FallbackValue=''}" Style="{StaticResource InfoValue}" />
+
+                                <TextBlock Grid.Row="6" Grid.Column="0" Text="User" Style="{StaticResource InfoLabel}" />
+                                <TextBlock Grid.Row="6" Grid.Column="2" Text="{Binding CurrentUser, FallbackValue=''}" Style="{StaticResource InfoValue}" />
+                            </Grid>
+                        </Grid>
+                    </Border>
+
+                    <!-- Disk Drives Card -->
+                    <Border Style="{StaticResource DashboardCard}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Text="DISK DRIVES" Style="{StaticResource SectionTitle}" />
+
+                            <ItemsControl Grid.Row="1" ItemsSource="{Binding DiskDrives}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{DynamicResource SubtleFillColorSecondaryBrush}"
+                                                CornerRadius="6"
+                                                Padding="12,10"
+                                                Margin="0,0,0,8">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="12" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                </Grid.RowDefinitions>
+
+                                                <ui:SymbolIcon Grid.Column="0" Grid.RowSpan="2"
+                                                               Symbol="HardDrive20"
+                                                               FontSize="24"
+                                                               VerticalAlignment="Center" />
+
+                                                <TextBlock Grid.Row="0" Grid.Column="2"
+                                                           FontWeight="SemiBold" FontSize="13">
+                                                    <Run Text="{Binding DriveLetter, Mode=OneWay}" />
+                                                    <Run Text=" " />
+                                                    <Run Text="{Binding VolumeLabel, Mode=OneWay}"
+                                                         Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                                </TextBlock>
+
+                                                <ProgressBar Grid.Row="1" Grid.Column="2"
+                                                             Value="{Binding UsagePercent, Mode=OneWay}"
+                                                             Maximum="100"
+                                                             Height="6"
+                                                             Margin="0,6,12,0" />
+
+                                                <StackPanel Grid.Column="3" Grid.RowSpan="2"
+                                                            VerticalAlignment="Center">
+                                                    <TextBlock FontSize="14" FontWeight="SemiBold"
+                                                               HorizontalAlignment="Right">
+                                                        <TextBlock.Text>
+                                                            <Binding Path="UsagePercent" StringFormat="{}{0:F0}%" />
+                                                        </TextBlock.Text>
+                                                    </TextBlock>
+                                                    <TextBlock Style="{StaticResource InfoLabel}"
+                                                               HorizontalAlignment="Right"
+                                                               FontSize="11">
+                                                        <Run Text="{Binding FileSystem, Mode=OneWay}" />
+                                                    </TextBlock>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <!-- Empty state -->
+                            <TextBlock Grid.Row="1"
+                                       Text="No fixed drives detected"
+                                       Style="{StaticResource InfoLabel}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       Visibility="{Binding DiskDrives.Count, Converter={StaticResource BoolToVis}}" />
+                        </Grid>
+                    </Border>
+
+                </UniformGrid>
+
+                <!-- Footer Status Bar -->
+                <Border Style="{StaticResource DashboardCard}" Margin="6,4,6,6" Padding="16,10">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" Orientation="Horizontal">
+                            <Ellipse Width="8" Height="8" Fill="{DynamicResource SystemFillColorSuccessBrush}" Margin="0,0,8,0" />
+                            <TextBlock Text="Monitoring Active" Style="{StaticResource InfoLabel}" VerticalAlignment="Center" />
+                        </StackPanel>
+
+                        <TextBlock Grid.Column="2" Style="{StaticResource InfoLabel}" VerticalAlignment="Center">
+                            <Run Text="SysAdminX v0.1.0-alpha · Refresh interval: " />
+                            <Run Text="1.5s" FontWeight="SemiBold" />
+                        </TextBlock>
+                    </Grid>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+
+</Page>

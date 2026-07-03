@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <OutputType>Library</OutputType>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="WPF-UI" Version="3.0.5" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SysAdminX.Core\SysAdminX.Core.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.Dashboard\SysAdminX.Dashboard.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.DeviceDetails\SysAdminX.DeviceDetails.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.DriverManager\SysAdminX.DriverManager.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.PatchManager\SysAdminX.PatchManager.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.NetworkToolkit\SysAdminX.NetworkToolkit.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.Troubleshooting\SysAdminX.Troubleshooting.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.AIAssistant\SysAdminX.AIAssistant.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.Reports\SysAdminX.Reports.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.Settings\SysAdminX.Settings.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.LogsViewer\SysAdminX.LogsViewer.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.SecurityCenter\SysAdminX.SecurityCenter.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.ActiveDirectory\SysAdminX.ActiveDirectory.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.Microsoft365\SysAdminX.Microsoft365.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.Azure\SysAdminX.Azure.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.RemoteSupport\SysAdminX.RemoteSupport.csproj" />
+  </ItemGroup>
+
+</Project>
