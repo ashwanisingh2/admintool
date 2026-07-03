@@ -112,6 +112,14 @@ public partial class MainWindowViewModel : ObservableObject
 
         MenuItems.Add(new NavigationMenuItem
         {
+            Title = "Battery Manager",
+            IconGlyph = "\uE83F",  // Battery icon
+            PageTag = "BatteryManager",
+            IsEnabled = true
+        });
+
+        MenuItems.Add(new NavigationMenuItem
+        {
             Title = "Troubleshooting",
             IconGlyph = "\uE90F",  // Wrench icon
             PageTag = "Troubleshooting",

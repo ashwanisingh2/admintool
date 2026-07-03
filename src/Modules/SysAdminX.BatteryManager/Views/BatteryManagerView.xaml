@@ -1,0 +1,202 @@
+<Page
+    x:Class="SysAdminX.BatteryManager.Views.BatteryManagerView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    xmlns:vm="clr-namespace:SysAdminX.BatteryManager.ViewModels"
+    mc:Ignorable="d"
+    Title="Battery Manager"
+    Loaded="OnPageLoaded"
+    d:DataContext="{d:DesignInstance vm:BatteryManagerViewModel, IsDesignTimeCreatable=False}">
+
+    <Page.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+    </Page.Resources>
+
+    <Grid>
+        <!-- Loading Overlay -->
+        <Grid Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}"
+              Panel.ZIndex="10"
+              Background="{DynamicResource ApplicationBackgroundBrush}">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <ui:ProgressRing IsIndeterminate="True" Width="48" Height="48" />
+                <TextBlock Text="Querying battery information..."
+                           Margin="0,16,0,0"
+                           FontSize="14"
+                           HorizontalAlignment="Center"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+            </StackPanel>
+        </Grid>
+
+        <!-- Error State -->
+        <Grid Visibility="{Binding HasError, Converter={StaticResource BoolToVis}}"
+              Panel.ZIndex="5">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <ui:SymbolIcon Symbol="ErrorCircle24" FontSize="48"
+                               Foreground="{DynamicResource SystemFillColorCriticalBrush}" />
+                <TextBlock Text="{Binding ErrorMessage}"
+                           Margin="0,12,0,0"
+                           FontSize="14"
+                           HorizontalAlignment="Center"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                           TextWrapping="Wrap"
+                           MaxWidth="400" />
+                <ui:Button Content="Retry"
+                           Margin="0,16,0,0"
+                           HorizontalAlignment="Center"
+                           Appearance="Primary"
+                           Command="{Binding RefreshCommand}" />
+            </StackPanel>
+        </Grid>
+
+        <Grid Margin="24">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <Grid Grid.Row="0" Margin="0,0,0,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="Battery Manager"
+                               FontSize="28"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                    <TextBlock Text="Check battery health and generate power reports"
+                               FontSize="13"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                               Margin="0,4,0,0" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <ui:Button Appearance="Secondary"
+                               Margin="0,0,8,0"
+                               Command="{Binding GenerateReportCommand}">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="DocumentPdf24" Margin="0,0,8,0" />
+                            <TextBlock Text="Generate Battery Report" />
+                        </StackPanel>
+                    </ui:Button>
+                    <ui:Button Appearance="Primary"
+                               Command="{Binding RefreshCommand}">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="ArrowSync24" Margin="0,0,8,0" />
+                            <TextBlock Text="Refresh" />
+                        </StackPanel>
+                    </ui:Button>
+                </StackPanel>
+            </Grid>
+
+            <!-- Content -->
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    
+                    <ui:Card Grid.Column="0" Margin="0,0,16,0" VerticalAlignment="Top" Width="400">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                                <ui:SymbolIcon Symbol="BatteryCharge24" FontSize="24" Margin="0,0,12,0" Foreground="{DynamicResource SystemAccentColorPrimaryBrush}" />
+                                <TextBlock Text="Battery Health" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            </StackPanel>
+
+                            <!-- Battery Details -->
+                            <Grid Margin="0,0,0,12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Name:" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                <TextBlock Grid.Column="1" Text="{Binding BatteryInfo.Name}" FontWeight="Medium" />
+                            </Grid>
+                            
+                            <Grid Margin="0,0,0,12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Manufacturer:" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                <TextBlock Grid.Column="1" Text="{Binding BatteryInfo.Manufacturer}" FontWeight="Medium" />
+                            </Grid>
+
+                            <Grid Margin="0,0,0,12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Status:" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                <TextBlock Grid.Column="1" Text="{Binding BatteryInfo.Status}" FontWeight="Medium" Foreground="{DynamicResource SystemFillColorSuccessBrush}" />
+                            </Grid>
+
+                            <Separator Margin="0,8,0,16" Background="{DynamicResource ControlStrokeColorDefaultBrush}" />
+
+                            <!-- Capacities -->
+                            <Grid Margin="0,0,0,12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Designed Capacity:" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                <TextBlock Grid.Column="1" Text="{Binding BatteryInfo.DesignedCapacity, StringFormat={}{0} mWh}" FontWeight="Medium" />
+                            </Grid>
+
+                            <Grid Margin="0,0,0,12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Full Charge Capacity:" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                <TextBlock Grid.Column="1" Text="{Binding BatteryInfo.FullChargeCapacity, StringFormat={}{0} mWh}" FontWeight="Medium" />
+                            </Grid>
+                            
+                            <Grid Margin="0,0,0,12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Current Capacity:" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                <TextBlock Grid.Column="1" Text="{Binding BatteryInfo.CurrentCapacity, StringFormat={}{0} mWh}" FontWeight="Medium" />
+                            </Grid>
+
+                            <Separator Margin="0,8,0,16" Background="{DynamicResource ControlStrokeColorDefaultBrush}" />
+                            
+                            <StackPanel Margin="0,0,0,12">
+                                <TextBlock Text="Wear Level" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,4" />
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding BatteryInfo.WearLevel, StringFormat={}{0:F1}%}" FontSize="24" FontWeight="SemiBold" />
+                                    <TextBlock Text="degraded" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="8,0,0,4" VerticalAlignment="Bottom" />
+                                </StackPanel>
+                                <ProgressBar Value="{Binding BatteryInfo.WearLevel}" Maximum="100" Margin="0,8,0,0" Height="4" Foreground="{DynamicResource SystemFillColorCriticalBrush}" />
+                            </StackPanel>
+
+                        </StackPanel>
+                    </ui:Card>
+                    
+                    <ui:Card Grid.Column="1" VerticalAlignment="Top">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                                <ui:SymbolIcon Symbol="Info24" FontSize="24" Margin="0,0,12,0" Foreground="{DynamicResource SystemAccentColorPrimaryBrush}" />
+                                <TextBlock Text="Battery Health Tips" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            </StackPanel>
+                            
+                            <TextBlock Text="Understanding Wear Level" FontWeight="Medium" Margin="0,0,0,4" />
+                            <TextBlock Text="Wear level indicates how much capacity your battery has lost compared to its original design. A wear level above 20-30% usually means you might notice significantly shorter battery life." TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,16" />
+
+                            <TextBlock Text="Battery Report" FontWeight="Medium" Margin="0,0,0,4" />
+                            <TextBlock Text="The 'Generate Battery Report' button runs 'powercfg /batteryreport'. This report provides an in-depth view of battery usage history, capacity history, and battery life estimates over time." TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,16" />
+                        </StackPanel>
+                    </ui:Card>
+                </Grid>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</Page>

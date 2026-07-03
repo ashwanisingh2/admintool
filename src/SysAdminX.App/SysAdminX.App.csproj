@@ -34,6 +34,16 @@
     <ProjectReference Include="..\Modules\SysAdminX.SecurityCenter\SysAdminX.SecurityCenter.csproj" />
 
     <ProjectReference Include="..\Modules\SysAdminX.RemoteSupport\SysAdminX.RemoteSupport.csproj" />
+
+    <ProjectReference Include="..\Modules\SysAdminX.BatteryManager\SysAdminX.BatteryManager.csproj" />
+
+    <ProjectReference Include="..\Modules\SysAdminX.ServiceManager\SysAdminX.ServiceManager.csproj" />
+
+    <ProjectReference Include="..\Modules\SysAdminX.SystemCleanup\SysAdminX.SystemCleanup.csproj" />
+
+    <ProjectReference Include="..\Modules\SysAdminX.SoftwareManager\SysAdminX.SoftwareManager.csproj" />
+
+    <ProjectReference Include="..\Modules\SysAdminX.PortableTools\SysAdminX.PortableTools.csproj" />
   </ItemGroup>
 
 </Project>

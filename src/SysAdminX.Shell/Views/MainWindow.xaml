@@ -20,6 +20,11 @@
     xmlns:m365Views="clr-namespace:SysAdminX.Microsoft365.Views;assembly=SysAdminX.Microsoft365"
     xmlns:azViews="clr-namespace:SysAdminX.Azure.Views;assembly=SysAdminX.Azure"
     xmlns:rsViews="clr-namespace:SysAdminX.RemoteSupport.Views;assembly=SysAdminX.RemoteSupport"
+    xmlns:batViews="clr-namespace:SysAdminX.BatteryManager.Views;assembly=SysAdminX.BatteryManager"
+    xmlns:svcViews="clr-namespace:SysAdminX.ServiceManager.Views;assembly=SysAdminX.ServiceManager"
+    xmlns:clnViews="clr-namespace:SysAdminX.SystemCleanup.Views;assembly=SysAdminX.SystemCleanup"
+    xmlns:sftViews="clr-namespace:SysAdminX.SoftwareManager.Views;assembly=SysAdminX.SoftwareManager"
+    xmlns:prtViews="clr-namespace:SysAdminX.PortableTools.Views;assembly=SysAdminX.PortableTools"
     mc:Ignorable="d"
     Title="SysAdminX — IT Admin Toolkit"
     Width="1280"
@@ -86,6 +91,13 @@
                     Icon="{ui:SymbolIcon ArrowDownload24}"
                     TargetPageType="{x:Type ptcViews:PatchManagerView}" />
 
+                <!-- Battery Manager -->
+                <ui:NavigationViewItem
+                    x:Name="NavBatteryManager"
+                    Content="Battery Manager"
+                    Icon="{ui:SymbolIcon BatteryCharge24}"
+                    TargetPageType="{x:Type batViews:BatteryManagerView}" />
+
                 <!-- Network Toolkit -->
                 <ui:NavigationViewItem
                     x:Name="NavNetworkToolkit"
@@ -99,6 +111,34 @@
                     Content="Troubleshooting"
                     Icon="{ui:SymbolIcon Wrench24}"
                     TargetPageType="{x:Type trbViews:TroubleshootingView}" />
+
+                <!-- Service Manager -->
+                <ui:NavigationViewItem
+                    x:Name="NavServiceManager"
+                    Content="Service Manager"
+                    Icon="{ui:SymbolIcon WindowApps24}"
+                    TargetPageType="{x:Type svcViews:ServiceManagerView}" />
+
+                <!-- System Cleanup -->
+                <ui:NavigationViewItem
+                    x:Name="NavSystemCleanup"
+                    Content="System Cleanup"
+                    Icon="{ui:SymbolIcon Delete24}"
+                    TargetPageType="{x:Type clnViews:SystemCleanupView}" />
+
+                <!-- Software Manager -->
+                <ui:NavigationViewItem
+                    x:Name="NavSoftwareManager"
+                    Content="Software Manager"
+                    Icon="{ui:SymbolIcon Apps24}"
+                    TargetPageType="{x:Type sftViews:SoftwareManagerView}" />
+
+                <!-- Portable Tools -->
+                <ui:NavigationViewItem
+                    x:Name="NavPortableTools"
+                    Content="Portable Tools"
+                    Icon="{ui:SymbolIcon Toolbox24}"
+                    TargetPageType="{x:Type prtViews:PortableToolsView}" />
 
                 <!-- AI Assistant -->
                 <ui:NavigationViewItem

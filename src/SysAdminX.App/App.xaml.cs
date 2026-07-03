@@ -186,6 +186,31 @@ public partial class App : Application
         services.AddSingleton<SysAdminX.RemoteSupport.Services.IRemoteSupportService, SysAdminX.RemoteSupport.Services.RemoteSupportService>();
         services.AddTransient<SysAdminX.RemoteSupport.ViewModels.RemoteSupportViewModel>();
         services.AddTransient<SysAdminX.RemoteSupport.Views.RemoteSupportView>();
+
+        // Modules - Battery Manager
+        services.AddSingleton<SysAdminX.BatteryManager.Services.IBatteryManagerService, SysAdminX.BatteryManager.Services.BatteryManagerService>();
+        services.AddTransient<SysAdminX.BatteryManager.ViewModels.BatteryManagerViewModel>();
+        services.AddTransient<SysAdminX.BatteryManager.Views.BatteryManagerView>();
+
+        // Modules - Service Manager
+        services.AddSingleton<SysAdminX.Core.Interfaces.IServiceManagerService, SysAdminX.Infrastructure.Services.ServiceManagerService>();
+        services.AddTransient<SysAdminX.ServiceManager.ViewModels.ServiceManagerViewModel>();
+        services.AddTransient<SysAdminX.ServiceManager.Views.ServiceManagerView>();
+
+        // Modules - System Cleanup
+        services.AddSingleton<SysAdminX.Core.Interfaces.ISystemCleanupService, SysAdminX.Infrastructure.Services.SystemCleanupService>();
+        services.AddTransient<SysAdminX.SystemCleanup.ViewModels.SystemCleanupViewModel>();
+        services.AddTransient<SysAdminX.SystemCleanup.Views.SystemCleanupView>();
+
+        // Modules - Software Manager
+        services.AddSingleton<SysAdminX.Core.Interfaces.ISoftwareManagerService, SysAdminX.Infrastructure.Services.SoftwareManagerService>();
+        services.AddTransient<SysAdminX.SoftwareManager.ViewModels.SoftwareManagerViewModel>();
+        services.AddTransient<SysAdminX.SoftwareManager.Views.SoftwareManagerView>();
+
+        // Modules - Portable Tools
+        services.AddSingleton<SysAdminX.Core.Interfaces.IPortableToolsService, SysAdminX.Infrastructure.Services.PortableToolsService>();
+        services.AddTransient<SysAdminX.PortableTools.ViewModels.PortableToolsViewModel>();
+        services.AddTransient<SysAdminX.PortableTools.Views.PortableToolsView>();
     }
 
     /// <summary>
