@@ -48,6 +48,8 @@ public class DeviceDetailsService : IDeviceDetailsService
             var mobo = await GetMotherboardInfoAsync(ct);
             var bios = await GetBiosInfoAsync(ct);
             var windows = await GetWindowsInfoAsync(ct);
+            var drives = await GetStorageInfoAsync(ct);
+            var activation = await GetActivationStatusAsync(ct);
 
             var result = new DeviceDetailsModel
             {
@@ -57,7 +59,9 @@ public class DeviceDetailsService : IDeviceDetailsService
                 Gpus = gpus,
                 Motherboard = mobo,
                 Bios = bios,
-                Windows = windows
+                Windows = windows,
+                Drives = drives,
+                Activation = activation
             };
 
             return Result<DeviceDetailsModel>.Success(result);
@@ -253,5 +257,58 @@ public class DeviceDetailsService : IDeviceDetailsService
         }
         
         return model;
+    }
+
+    private async Task<List<StorageDriveModel>> GetStorageInfoAsync(CancellationToken ct)
+    {
+        var drives = new List<StorageDriveModel>();
+        var wmiResult = await _wmiService.QueryAsync("SELECT DeviceID, VolumeName, FileSystem, Size, FreeSpace, DriveType FROM Win32_LogicalDisk WHERE DriveType=3", ct);
+        if (wmiResult.IsSuccess && wmiResult.Value != null)
+        {
+            foreach (var obj in wmiResult.Value)
+            {
+                long size = long.TryParse(obj["Size"]?.ToString(), out var s) ? s : 0;
+                long free = long.TryParse(obj["FreeSpace"]?.ToString(), out var f) ? f : 0;
+                long used = size - free;
+                double pct = size > 0 ? (used * 100.0 / size) : 0;
+                drives.Add(new StorageDriveModel
+                {
+                    DriveLetter = obj["DeviceID"]?.ToString() ?? "",
+                    Label = obj["VolumeName"]?.ToString() ?? "",
+                    FileSystem = obj["FileSystem"]?.ToString() ?? "",
+                    TotalSize = $"{size / (1024.0 * 1024 * 1024):F1} GB",
+                    FreeSpace = $"{free / (1024.0 * 1024 * 1024):F1} GB",
+                    UsedSpace = $"{used / (1024.0 * 1024 * 1024):F1} GB",
+                    UsagePercent = pct,
+                    DriveType = "Local Disk"
+                });
+            }
+        }
+        return drives;
+    }
+
+    private async Task<ActivationStatusModel> GetActivationStatusAsync(CancellationToken ct)
+    {
+        var wmiResult = await _wmiService.QueryAsync("SELECT LicenseStatus FROM SoftwareLicensingProduct WHERE LicenseStatus=1 AND PartialProductKey IS NOT NULL", ct);
+        
+        string status = "Not Activated";
+        if (wmiResult.IsSuccess && wmiResult.Value != null && wmiResult.Value.Count > 0)
+        {
+            var licStatus = wmiResult.Value[0]["LicenseStatus"]?.ToString();
+            status = licStatus == "1" ? "Activated" : "Not Activated";
+        }
+        
+        // Get partial product key (masked)
+        var keyResult = await _registryService.ReadStringValueAsync("HKLM", @"SOFTWARE\Microsoft\Windows NT\CurrentVersion", "ProductId", ct);
+        string maskedKey = keyResult.IsSuccess && !string.IsNullOrEmpty(keyResult.Value) 
+            ? $"XXXXX-XXXXX-XXXXX-{keyResult.Value.Substring(Math.Max(0, keyResult.Value.Length - 5))}" 
+            : "N/A";
+        
+        return new ActivationStatusModel
+        {
+            LicenseStatus = status,
+            ActivationType = status == "Activated" ? "Digital License" : "N/A",
+            ProductKey = maskedKey
+        };
     }
 }

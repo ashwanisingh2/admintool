@@ -46,11 +46,19 @@
             <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
                 <StackPanel>
                     
-                    <ui:TextBlock FontTypography="Subtitle" Text="System File Checker" Margin="0,0,0,12" />
-                    <ui:CardAction Command="{Binding RunSfcCommand}" Margin="0,0,0,24">
+                    <ui:TextBlock FontTypography="Subtitle" Text="System &amp; Disk Health" Margin="0,0,0,12" />
+                    <ui:CardAction Command="{Binding RunSfcCommand}" Margin="0,0,0,12">
                         <StackPanel>
                             <TextBlock Text="Run SFC /scannow" FontWeight="SemiBold" />
                             <TextBlock Text="Scans the integrity of all protected system files and replaces incorrect versions with correct Microsoft versions."
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       TextWrapping="Wrap" Margin="0,4,0,0" />
+                        </StackPanel>
+                    </ui:CardAction>
+                    <ui:CardAction Command="{Binding RunChkdskCommand}" Margin="0,0,0,24">
+                        <StackPanel>
+                            <TextBlock Text="Schedule CHKDSK" FontWeight="SemiBold" />
+                            <TextBlock Text="Schedules a comprehensive disk check for errors and bad sectors on the next system restart."
                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                        TextWrapping="Wrap" Margin="0,4,0,0" />
                         </StackPanel>
@@ -74,11 +82,71 @@
                         </StackPanel>
                     </ui:CardAction>
 
-                    <ui:TextBlock FontTypography="Subtitle" Text="Storage &amp; Power" Margin="0,0,0,12" />
+                    <ui:TextBlock FontTypography="Subtitle" Text="Service Repairs" Margin="0,0,0,12" />
+                    <ui:CardAction Command="{Binding ResetWindowsUpdateCommand}" Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="Reset Windows Update" FontWeight="SemiBold" />
+                            <TextBlock Text="Stops update services, clears the software distribution cache, and restarts the services to fix update issues."
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       TextWrapping="Wrap" Margin="0,4,0,0" />
+                        </StackPanel>
+                    </ui:CardAction>
+                    <ui:CardAction Command="{Binding FixPrintSpoolerCommand}" Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="Fix Print Spooler" FontWeight="SemiBold" />
+                            <TextBlock Text="Stops the print spooler, clears all stuck print jobs in the queue, and restarts the service."
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       TextWrapping="Wrap" Margin="0,4,0,0" />
+                        </StackPanel>
+                    </ui:CardAction>
+                    <ui:CardAction Command="{Binding ResetWindowsSearchCommand}" Margin="0,0,0,24">
+                        <StackPanel>
+                            <TextBlock Text="Reset Windows Search" FontWeight="SemiBold" />
+                            <TextBlock Text="Deletes the Windows Search index database and restarts the service to rebuild the index from scratch."
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       TextWrapping="Wrap" Margin="0,4,0,0" />
+                        </StackPanel>
+                    </ui:CardAction>
+
+                    <ui:TextBlock FontTypography="Subtitle" Text="Network Diagnostics" Margin="0,0,0,12" />
+                    <ui:CardAction Command="{Binding FlushDnsCommand}" Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="Flush DNS Cache" FontWeight="SemiBold" />
+                            <TextBlock Text="Clears the local DNS resolver cache to fix website loading and connectivity issues."
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       TextWrapping="Wrap" Margin="0,4,0,0" />
+                        </StackPanel>
+                    </ui:CardAction>
+                    <ui:CardAction Command="{Binding ResetWinsockCommand}" Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="Reset Winsock" FontWeight="SemiBold" />
+                            <TextBlock Text="Resets the Windows Sockets API to default. Useful for fixing persistent internet connection problems."
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       TextWrapping="Wrap" Margin="0,4,0,0" />
+                        </StackPanel>
+                    </ui:CardAction>
+                    <ui:CardAction Command="{Binding ResetTcpIpCommand}" Margin="0,0,0,24">
+                        <StackPanel>
+                            <TextBlock Text="Reset TCP/IP Stack" FontWeight="SemiBold" />
+                            <TextBlock Text="Resets the TCP/IP stack to its original state. Requires a system restart."
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       TextWrapping="Wrap" Margin="0,4,0,0" />
+                        </StackPanel>
+                    </ui:CardAction>
+
+                    <ui:TextBlock FontTypography="Subtitle" Text="Cache &amp; Power Management" Margin="0,0,0,12" />
                     <ui:CardAction Command="{Binding ClearTempCommand}" Margin="0,0,0,12">
                         <StackPanel>
                             <TextBlock Text="Clear Temporary Files" FontWeight="SemiBold" />
                             <TextBlock Text="Safely deletes files in both User and System temporary directories to free up space."
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       TextWrapping="Wrap" Margin="0,4,0,0" />
+                        </StackPanel>
+                    </ui:CardAction>
+                    <ui:CardAction Command="{Binding RebuildIconCacheCommand}" Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="Rebuild Icon &amp; Thumbnail Cache" FontWeight="SemiBold" />
+                            <TextBlock Text="Clears corrupted icon and thumbnail caches and restarts Windows Explorer."
                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                        TextWrapping="Wrap" Margin="0,4,0,0" />
                         </StackPanel>

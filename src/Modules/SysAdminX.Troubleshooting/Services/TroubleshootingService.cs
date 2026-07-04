@@ -148,4 +148,131 @@ public class TroubleshootingService : ITroubleshootingService
             OutputMessage = result.IsSuccess ? $"Fast Startup has been {(enable ? "enabled" : "disabled")}." : result.ErrorMessage ?? "Failed to toggle Fast Startup."
         });
     }
+
+    public async Task<Result<TroubleshootingActionModel>> RunChkdskAsync(CancellationToken ct = default)
+    {
+        _logger.LogInformation("Launching CHKDSK");
+        var result = await _processService.ExecuteAsync("cmd.exe", "/c echo y | chkdsk C: /f /r & pause", true, ct);
+        
+        return Result<TroubleshootingActionModel>.Success(new TroubleshootingActionModel
+        {
+            ActionName = "Schedule CHKDSK",
+            Description = "Schedules a disk check on the next restart.",
+            IsSuccess = result.IsSuccess,
+            OutputMessage = result.IsSuccess ? "CHKDSK scheduled for next reboot. Check the external console window for details." : result.ErrorMessage ?? "Failed to schedule CHKDSK."
+        });
+    }
+
+    public async Task<Result<TroubleshootingActionModel>> ResetWindowsUpdateAsync(CancellationToken ct = default)
+    {
+        _logger.LogInformation("Resetting Windows Update components");
+        string cmds = "net stop wuauserv & net stop bits & net stop cryptSvc & net stop msiserver & " +
+                      "ren C:\\Windows\\SoftwareDistribution SoftwareDistribution.old & " +
+                      "ren C:\\Windows\\System32\\catroot2 catroot2.old & " +
+                      "net start wuauserv & net start bits & net start cryptSvc & net start msiserver & pause";
+        var result = await _processService.ExecuteAsync("cmd.exe", $"/c {cmds}", true, ct);
+        
+        return Result<TroubleshootingActionModel>.Success(new TroubleshootingActionModel
+        {
+            ActionName = "Reset Windows Update",
+            Description = "Stops WU services, renames cache folders, and restarts services.",
+            IsSuccess = result.IsSuccess,
+            OutputMessage = result.IsSuccess ? "Windows Update components reset successfully. Check console for details." : result.ErrorMessage ?? "Failed to reset Windows Update."
+        });
+    }
+
+    public async Task<Result<TroubleshootingActionModel>> FixPrintSpoolerAsync(CancellationToken ct = default)
+    {
+        _logger.LogInformation("Fixing Print Spooler");
+        string cmds = "net stop spooler & del /Q /F /S \"%systemroot%\\System32\\Spool\\Printers\\*.*\" & net start spooler & pause";
+        var result = await _processService.ExecuteAsync("cmd.exe", $"/c {cmds}", true, ct);
+        
+        return Result<TroubleshootingActionModel>.Success(new TroubleshootingActionModel
+        {
+            ActionName = "Fix Print Spooler",
+            Description = "Stops spooler service, clears stuck print jobs, and restarts service.",
+            IsSuccess = result.IsSuccess,
+            OutputMessage = result.IsSuccess ? "Print spooler cleared and restarted." : result.ErrorMessage ?? "Failed to fix print spooler."
+        });
+    }
+
+    public async Task<Result<TroubleshootingActionModel>> FlushDnsAsync(CancellationToken ct = default)
+    {
+        _logger.LogInformation("Flushing DNS Cache");
+        var result = await _processService.ExecuteAsync("cmd.exe", "/c ipconfig /flushdns & pause", true, ct);
+        
+        return Result<TroubleshootingActionModel>.Success(new TroubleshootingActionModel
+        {
+            ActionName = "Flush DNS Cache",
+            Description = "Clears the DNS resolver cache.",
+            IsSuccess = result.IsSuccess,
+            OutputMessage = result.IsSuccess ? "DNS cache successfully flushed." : result.ErrorMessage ?? "Failed to flush DNS cache."
+        });
+    }
+
+    public async Task<Result<TroubleshootingActionModel>> ResetWinsockAsync(CancellationToken ct = default)
+    {
+        _logger.LogInformation("Resetting Winsock");
+        var result = await _processService.ExecuteAsync("cmd.exe", "/c netsh winsock reset & pause", true, ct);
+        
+        return Result<TroubleshootingActionModel>.Success(new TroubleshootingActionModel
+        {
+            ActionName = "Reset Winsock",
+            Description = "Resets the Windows Sockets API.",
+            IsSuccess = result.IsSuccess,
+            OutputMessage = result.IsSuccess ? "Winsock reset successfully. A restart is required." : result.ErrorMessage ?? "Failed to reset Winsock."
+        });
+    }
+
+    public async Task<Result<TroubleshootingActionModel>> ResetTcpIpAsync(CancellationToken ct = default)
+    {
+        _logger.LogInformation("Resetting TCP/IP stack");
+        var result = await _processService.ExecuteAsync("cmd.exe", "/c netsh int ip reset & pause", true, ct);
+        
+        return Result<TroubleshootingActionModel>.Success(new TroubleshootingActionModel
+        {
+            ActionName = "Reset TCP/IP",
+            Description = "Resets TCP/IP stack to default state.",
+            IsSuccess = result.IsSuccess,
+            OutputMessage = result.IsSuccess ? "TCP/IP reset successfully. A restart is required." : result.ErrorMessage ?? "Failed to reset TCP/IP."
+        });
+    }
+
+    public async Task<Result<TroubleshootingActionModel>> RebuildIconCacheAsync(CancellationToken ct = default)
+    {
+        _logger.LogInformation("Rebuilding Icon Cache");
+        string cmds = "ie4uinit.exe -show & taskkill /IM explorer.exe /F & " +
+                      "del /A /Q \"%localappdata%\\IconCache.db\" & " +
+                      "del /A /F /Q \"%localappdata%\\Microsoft\\Windows\\Explorer\\iconcache*\" & " +
+                      "del /A /F /Q \"%localappdata%\\Microsoft\\Windows\\Explorer\\thumbcache*\" & " +
+                      "start explorer.exe";
+        
+        // This is safe to run without wait for the whole thing (explorer restart), but we'll wait.
+        var result = await _processService.ExecuteAsync("cmd.exe", $"/c {cmds}", false, ct);
+        
+        return Result<TroubleshootingActionModel>.Success(new TroubleshootingActionModel
+        {
+            ActionName = "Rebuild Icon/Thumbnail Cache",
+            Description = "Clears and rebuilds corrupted icon and thumbnail caches.",
+            IsSuccess = result.IsSuccess,
+            OutputMessage = result.IsSuccess ? "Icon cache rebuilt successfully. Explorer was restarted." : result.ErrorMessage ?? "Failed to rebuild icon cache."
+        });
+    }
+
+    public async Task<Result<TroubleshootingActionModel>> ResetWindowsSearchAsync(CancellationToken ct = default)
+    {
+        _logger.LogInformation("Resetting Windows Search Index");
+        string cmds = "net stop WSearch & " +
+                      "rd /s /q \"%ProgramData%\\Microsoft\\Search\\Data\\Applications\\Windows\" & " +
+                      "net start WSearch & pause";
+        var result = await _processService.ExecuteAsync("cmd.exe", $"/c {cmds}", true, ct);
+        
+        return Result<TroubleshootingActionModel>.Success(new TroubleshootingActionModel
+        {
+            ActionName = "Reset Windows Search",
+            Description = "Deletes search index database and restarts search service.",
+            IsSuccess = result.IsSuccess,
+            OutputMessage = result.IsSuccess ? "Windows Search index reset successfully." : result.ErrorMessage ?? "Failed to reset Windows Search."
+        });
+    }
 }

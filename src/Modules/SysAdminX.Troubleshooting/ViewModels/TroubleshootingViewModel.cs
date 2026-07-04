@@ -83,4 +83,84 @@ public partial class TroubleshootingViewModel : ObservableObject
             ActionHistory.Insert(0, result.Value);
         }
     }
+
+    [RelayCommand]
+    public async Task RunChkdskAsync(CancellationToken ct)
+    {
+        var result = await _troubleshootingService.RunChkdskAsync(ct);
+        if (result.IsSuccess && result.Value != null)
+        {
+            ActionHistory.Insert(0, result.Value);
+        }
+    }
+
+    [RelayCommand]
+    public async Task ResetWindowsUpdateAsync(CancellationToken ct)
+    {
+        var result = await _troubleshootingService.ResetWindowsUpdateAsync(ct);
+        if (result.IsSuccess && result.Value != null)
+        {
+            ActionHistory.Insert(0, result.Value);
+        }
+    }
+
+    [RelayCommand]
+    public async Task FixPrintSpoolerAsync(CancellationToken ct)
+    {
+        var result = await _troubleshootingService.FixPrintSpoolerAsync(ct);
+        if (result.IsSuccess && result.Value != null)
+        {
+            ActionHistory.Insert(0, result.Value);
+        }
+    }
+
+    [RelayCommand]
+    public async Task FlushDnsAsync(CancellationToken ct)
+    {
+        var result = await _troubleshootingService.FlushDnsAsync(ct);
+        if (result.IsSuccess && result.Value != null)
+        {
+            ActionHistory.Insert(0, result.Value);
+        }
+    }
+
+    [RelayCommand]
+    public async Task ResetWinsockAsync(CancellationToken ct)
+    {
+        var result = await _troubleshootingService.ResetWinsockAsync(ct);
+        if (result.IsSuccess && result.Value != null)
+        {
+            ActionHistory.Insert(0, result.Value);
+        }
+    }
+
+    [RelayCommand]
+    public async Task ResetTcpIpAsync(CancellationToken ct)
+    {
+        var result = await _troubleshootingService.ResetTcpIpAsync(ct);
+        if (result.IsSuccess && result.Value != null)
+        {
+            ActionHistory.Insert(0, result.Value);
+        }
+    }
+
+    [RelayCommand]
+    public async Task RebuildIconCacheAsync(CancellationToken ct)
+    {
+        var result = await _troubleshootingService.RebuildIconCacheAsync(ct);
+        if (result.IsSuccess && result.Value != null)
+        {
+            ActionHistory.Insert(0, result.Value);
+        }
+    }
+
+    [RelayCommand]
+    public async Task ResetWindowsSearchAsync(CancellationToken ct)
+    {
+        var result = await _troubleshootingService.ResetWindowsSearchAsync(ct);
+        if (result.IsSuccess && result.Value != null)
+        {
+            ActionHistory.Insert(0, result.Value);
+        }
+    }
 }

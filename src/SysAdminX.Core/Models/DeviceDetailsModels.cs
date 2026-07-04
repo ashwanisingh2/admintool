@@ -70,6 +70,31 @@ public record WindowsBuildModel
     public string InstallDate { get; init; } = string.Empty;
 }
 
+/// <summary>
+/// Represents storage drive information.
+/// </summary>
+public record StorageDriveModel
+{
+    public string DriveLetter { get; init; } = "";
+    public string Label { get; init; } = "";
+    public string FileSystem { get; init; } = "";
+    public string TotalSize { get; init; } = "";
+    public string FreeSpace { get; init; } = "";
+    public string UsedSpace { get; init; } = "";
+    public double UsagePercent { get; init; }
+    public string DriveType { get; init; } = "";
+}
+
+/// <summary>
+/// Represents Windows activation status.
+/// </summary>
+public record ActivationStatusModel
+{
+    public string LicenseStatus { get; init; } = "";
+    public string ActivationType { get; init; } = "";
+    public string ProductKey { get; init; } = "";
+}
+
 public record DeviceDetailsModel
 {
     public ComputerInfoModel Computer { get; init; } = new();
@@ -79,4 +104,6 @@ public record DeviceDetailsModel
     public MotherboardInfoModel Motherboard { get; init; } = new();
     public BiosInfoModel Bios { get; init; } = new();
     public WindowsBuildModel Windows { get; init; } = new();
+    public List<StorageDriveModel> Drives { get; init; } = new();
+    public ActivationStatusModel Activation { get; init; } = new();
 }

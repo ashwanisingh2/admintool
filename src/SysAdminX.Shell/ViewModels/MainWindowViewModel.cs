@@ -83,7 +83,7 @@ public partial class MainWindowViewModel : ObservableObject
             Title = "Device Details",
             IconGlyph = "\uE7F7",  // PC icon
             PageTag = "DeviceDetails",
-            IsEnabled = false       // Phase 1 - pending
+            IsEnabled = true
         });
 
         MenuItems.Add(new NavigationMenuItem
@@ -91,7 +91,7 @@ public partial class MainWindowViewModel : ObservableObject
             Title = "Driver Manager",
             IconGlyph = "\uE964",  // Processing icon
             PageTag = "DriverManager",
-            IsEnabled = false
+            IsEnabled = true
         });
 
         MenuItems.Add(new NavigationMenuItem
@@ -99,15 +99,7 @@ public partial class MainWindowViewModel : ObservableObject
             Title = "Patch Manager",
             IconGlyph = "\uE777",  // Update icon
             PageTag = "PatchManager",
-            IsEnabled = false
-        });
-
-        MenuItems.Add(new NavigationMenuItem
-        {
-            Title = "Network Toolkit",
-            IconGlyph = "\uE968",  // Network icon
-            PageTag = "NetworkToolkit",
-            IsEnabled = false
+            IsEnabled = true
         });
 
         MenuItems.Add(new NavigationMenuItem
@@ -120,10 +112,50 @@ public partial class MainWindowViewModel : ObservableObject
 
         MenuItems.Add(new NavigationMenuItem
         {
+            Title = "Network Toolkit",
+            IconGlyph = "\uE968",  // Network icon
+            PageTag = "NetworkToolkit",
+            IsEnabled = true
+        });
+
+        MenuItems.Add(new NavigationMenuItem
+        {
             Title = "Troubleshooting",
             IconGlyph = "\uE90F",  // Wrench icon
             PageTag = "Troubleshooting",
-            IsEnabled = false
+            IsEnabled = true
+        });
+
+        MenuItems.Add(new NavigationMenuItem
+        {
+            Title = "Service Manager",
+            IconGlyph = "\uE912",  // WindowApps icon
+            PageTag = "ServiceManager",
+            IsEnabled = true
+        });
+
+        MenuItems.Add(new NavigationMenuItem
+        {
+            Title = "System Cleanup",
+            IconGlyph = "\uE74D",  // Delete icon
+            PageTag = "SystemCleanup",
+            IsEnabled = true
+        });
+
+        MenuItems.Add(new NavigationMenuItem
+        {
+            Title = "Software Manager",
+            IconGlyph = "\uE71D",  // Apps icon
+            PageTag = "SoftwareManager",
+            IsEnabled = true
+        });
+
+        MenuItems.Add(new NavigationMenuItem
+        {
+            Title = "Portable Tools",
+            IconGlyph = "\uE74C",  // Toolbox icon
+            PageTag = "PortableTools",
+            IsEnabled = true
         });
 
         MenuItems.Add(new NavigationMenuItem
@@ -131,7 +163,15 @@ public partial class MainWindowViewModel : ObservableObject
             Title = "AI Assistant",
             IconGlyph = "\uE99A",  // Robot icon
             PageTag = "AIAssistant",
-            IsEnabled = false
+            IsEnabled = true
+        });
+
+        MenuItems.Add(new NavigationMenuItem
+        {
+            Title = "Remote Support",
+            IconGlyph = "\uE7F7",  // Desktop icon
+            PageTag = "RemoteSupport",
+            IsEnabled = true
         });
 
         MenuItems.Add(new NavigationMenuItem
@@ -139,7 +179,7 @@ public partial class MainWindowViewModel : ObservableObject
             Title = "Reports",
             IconGlyph = "\uE9F9",  // Document icon
             PageTag = "Reports",
-            IsEnabled = false
+            IsEnabled = true
         });
 
         // Footer items
@@ -148,7 +188,15 @@ public partial class MainWindowViewModel : ObservableObject
             Title = "Logs",
             IconGlyph = "\uE7BA",  // List icon
             PageTag = "Logs",
-            IsEnabled = false
+            IsEnabled = true
+        });
+
+        FooterItems.Add(new NavigationMenuItem
+        {
+            Title = "Security Center",
+            IconGlyph = "\uE72E",  // Shield icon
+            PageTag = "SecurityCenter",
+            IsEnabled = true
         });
 
         FooterItems.Add(new NavigationMenuItem
@@ -156,7 +204,7 @@ public partial class MainWindowViewModel : ObservableObject
             Title = "Settings",
             IconGlyph = "\uE713",  // Settings gear icon
             PageTag = "Settings",
-            IsEnabled = false
+            IsEnabled = true
         });
     }
 

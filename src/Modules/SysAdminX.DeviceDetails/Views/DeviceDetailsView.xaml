@@ -129,6 +129,7 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
                     
                     <!-- Computer Info -->
@@ -386,6 +387,93 @@
 
                                 <TextBlock Grid.Row="6" Grid.Column="0" Text="Release Date:" Style="{StaticResource LabelText}" />
                                 <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding DeviceDetails.Bios.ReleaseDate}" Style="{StaticResource ValueText}" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Storage Info -->
+                    <Border Grid.Row="3" Grid.Column="0" Style="{StaticResource InfoCard}" VerticalAlignment="Top">
+                        <StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <ui:SymbolIcon Symbol="Drive24" FontSize="20" Margin="0,0,12,16" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                                <TextBlock Grid.Column="1" Text="STORAGE" Style="{StaticResource SectionHeader}" />
+                            </Grid>
+                            
+                            <ItemsControl ItemsSource="{Binding DeviceDetails.Drives}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,0,0,12">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="120" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                            </Grid.RowDefinitions>
+                                            
+                                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Drive:" Style="{StaticResource LabelText}" />
+                                            <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal">
+                                                <TextBlock Text="{Binding DriveLetter}" Style="{StaticResource ValueText}" />
+                                                <TextBlock Text=" - " Style="{StaticResource ValueText}" />
+                                                <TextBlock Text="{Binding Label}" Style="{StaticResource ValueText}" />
+                                            </StackPanel>
+                                            
+                                            <TextBlock Grid.Row="1" Grid.Column="0" Text="File System:" Style="{StaticResource LabelText}" />
+                                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding FileSystem}" Style="{StaticResource ValueText}" />
+                                            
+                                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Capacity:" Style="{StaticResource LabelText}" />
+                                            <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal">
+                                                <TextBlock Text="{Binding FreeSpace}" Style="{StaticResource ValueText}" />
+                                                <TextBlock Text=" free of " Style="{StaticResource LabelText}" Margin="4,4,4,4" />
+                                                <TextBlock Text="{Binding TotalSize}" Style="{StaticResource ValueText}" />
+                                            </StackPanel>
+                                            
+                                            <ui:ProgressBar Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Value="{Binding UsagePercent}" Margin="0,4,0,8" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Activation Info -->
+                    <Border Grid.Row="3" Grid.Column="1" Style="{StaticResource InfoCard}" VerticalAlignment="Top">
+                        <StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <ui:SymbolIcon Symbol="Key24" FontSize="20" Margin="0,0,12,16" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                                <TextBlock Grid.Column="1" Text="ACTIVATION STATUS" Style="{StaticResource SectionHeader}" />
+                            </Grid>
+                            
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="License Status:" Style="{StaticResource LabelText}" />
+                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding DeviceDetails.Activation.LicenseStatus}" Style="{StaticResource ValueText}" />
+                                
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Activation Type:" Style="{StaticResource LabelText}" />
+                                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding DeviceDetails.Activation.ActivationType}" Style="{StaticResource ValueText}" />
+                                
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Product Key:" Style="{StaticResource LabelText}" />
+                                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding DeviceDetails.Activation.ProductKey}" Style="{StaticResource ValueText}" />
                             </Grid>
                         </StackPanel>
                     </Border>
