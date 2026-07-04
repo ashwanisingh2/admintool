@@ -106,7 +106,7 @@
                                    Margin="0,0,8,0"
                                    ToolTip="Export to PDF (Coming Soon)">
                             <StackPanel Orientation="Horizontal">
-                                <ui:SymbolIcon Symbol="DocumentPdf24" Margin="0,0,8,0" />
+                                <ui:SymbolIcon Symbol="Document24" Margin="0,0,8,0" />
                                 <TextBlock Text="Export" />
                             </StackPanel>
                         </ui:Button>
@@ -273,7 +273,7 @@
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <ui:SymbolIcon Symbol="DeveloperBoard24" FontSize="20" Margin="0,0,12,16" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                                <ui:SymbolIcon Symbol="Desktop24" FontSize="20" Margin="0,0,12,16" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
                                 <TextBlock Grid.Column="1" Text="MEMORY (RAM)" Style="{StaticResource SectionHeader}" />
                             </Grid>
                             
@@ -312,7 +312,7 @@
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <ui:SymbolIcon Symbol="Glance24" FontSize="20" Margin="0,0,12,16" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                                <ui:SymbolIcon Symbol="Monitor24" FontSize="20" Margin="0,0,12,16" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
                                 <TextBlock Grid.Column="1" Text="GRAPHICS" Style="{StaticResource SectionHeader}" />
                             </Grid>
 
