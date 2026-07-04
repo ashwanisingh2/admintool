@@ -94,7 +94,7 @@
                         </Grid.RowDefinitions>
                         
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                            <ui:SymbolIcon Symbol="GlanceDefault12" FontSize="24" Margin="0,0,12,0" Foreground="{DynamicResource SystemAccentColorPrimaryBrush}" />
+                            <ui:SymbolIcon Symbol="Code24" FontSize="24" Margin="0,0,12,0" Foreground="{DynamicResource SystemAccentColorPrimaryBrush}" />
                             <TextBlock Text="Remote Command Prompt" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
                         </StackPanel>
                         
