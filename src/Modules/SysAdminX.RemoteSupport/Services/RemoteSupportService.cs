@@ -29,14 +29,13 @@ public class RemoteSupportService : IRemoteSupportService
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(hostname)) return Task.CompletedTask;
-            
             _logger.LogInformation("Launching RDP for {Hostname}", hostname);
             
+            var args = string.IsNullOrWhiteSpace(hostname) ? "" : $"/v:{hostname}";
             Process.Start(new ProcessStartInfo
             {
                 FileName = "mstsc.exe",
-                Arguments = $"/v:{hostname}",
+                Arguments = args,
                 UseShellExecute = true
             });
         }
@@ -52,14 +51,13 @@ public class RemoteSupportService : IRemoteSupportService
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(hostname)) return Task.CompletedTask;
-            
             _logger.LogInformation("Launching Computer Management for {Hostname}", hostname);
             
+            var args = string.IsNullOrWhiteSpace(hostname) ? "compmgmt.msc" : $"compmgmt.msc /computer=\\\\{hostname}";
             Process.Start(new ProcessStartInfo
             {
                 FileName = "mmc.exe",
-                Arguments = $"compmgmt.msc /computer=\\\\{hostname}",
+                Arguments = args,
                 UseShellExecute = true
             });
         }
