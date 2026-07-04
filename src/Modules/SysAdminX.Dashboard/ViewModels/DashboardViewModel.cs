@@ -330,7 +330,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             _liveTimer.Start();
         }
 
-        await _healthService.StartMonitoringAsync(MONITORING_INTERVAL_MS, health =>
+        _ = _healthService.StartMonitoringAsync(MONITORING_INTERVAL_MS, health =>
         {
             System.Windows.Application.Current?.Dispatcher.Invoke(() =>
             {
