@@ -60,6 +60,23 @@
             </StackPanel>
         </Grid>
 
+        <!-- Success State -->
+        <Grid Visibility="{Binding IsSuccess, Converter={StaticResource BoolToVis}}"
+              Panel.ZIndex="6"
+              Margin="0,16,0,0"
+              VerticalAlignment="Top"
+              HorizontalAlignment="Center">
+            <Border Background="{DynamicResource SystemFillColorSuccessBrush}" Padding="16,12" CornerRadius="4">
+                <StackPanel Orientation="Horizontal">
+                    <ui:SymbolIcon Symbol="CheckmarkCircle24" FontSize="20" Foreground="White" Margin="0,0,12,0" />
+                    <TextBlock Text="{Binding SuccessMessage}"
+                               FontSize="14"
+                               Foreground="White"
+                               VerticalAlignment="Center" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
         <!-- Error State -->
         <Grid Visibility="{Binding HasError, Converter={StaticResource BoolToVis}}"
               Panel.ZIndex="5">
@@ -126,6 +143,7 @@
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
@@ -405,7 +423,7 @@
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <ui:SymbolIcon Symbol="Folder24" FontSize="20" Margin="0,0,12,16" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                                <ui:SymbolIcon Symbol="Server24" FontSize="20" Margin="0,0,12,16" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
                                 <TextBlock Grid.Column="1" Text="STORAGE" Style="{StaticResource SectionHeader}" />
                             </Grid>
                             
@@ -465,7 +483,7 @@
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <ui:SymbolIcon Symbol="Lock24" FontSize="20" Margin="0,0,12,16" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                                <ui:SymbolIcon Symbol="Shield24" FontSize="20" Margin="0,0,12,16" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
                                 <TextBlock Grid.Column="1" Text="ACTIVATION STATUS" Style="{StaticResource SectionHeader}" />
                             </Grid>
                             
@@ -489,6 +507,60 @@
                                 <TextBlock Grid.Row="2" Grid.Column="0" Text="Product Key:" Style="{StaticResource LabelText}" />
                                 <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding DeviceDetails.Activation.ProductKey}" Style="{StaticResource ValueText}" />
                             </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Storage Optimization -->
+                    <Border Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" Style="{StaticResource InfoCard}" VerticalAlignment="Top">
+                        <StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <ui:SymbolIcon Symbol="Flash24" FontSize="20" Margin="0,0,12,16" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                                <TextBlock Grid.Column="1" Text="STORAGE OPTIMIZATION" Style="{StaticResource SectionHeader}" />
+                            </Grid>
+                            
+                            <ItemsControl ItemsSource="{Binding DeviceDetails.Drives}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,0,0,12">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            
+                                            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,16,0">
+                                                <TextBlock Text="{Binding DriveLetter}" Style="{StaticResource ValueText}" FontWeight="SemiBold" Margin="0,0,8,0" />
+                                                <Border Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding DriveType}" FontSize="12" />
+                                                </Border>
+                                            </StackPanel>
+                                            
+                                            <ui:Button Grid.Column="2" 
+                                                       Content="Run TRIM" 
+                                                       Command="{Binding DataContext.RunTrimCommand, RelativeSource={RelativeSource AncestorType=Page}}" 
+                                                       CommandParameter="{Binding DriveLetter}"
+                                                       Appearance="Secondary">
+                                                <ui:Button.Style>
+                                                    <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
+                                                        <Setter Property="IsEnabled" Value="False" />
+                                                        <Setter Property="ToolTip" Value="TRIM is for SSDs only" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding DriveType}" Value="SSD">
+                                                                <Setter Property="IsEnabled" Value="True" />
+                                                                <Setter Property="ToolTip" Value="Optimize SSD" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </ui:Button.Style>
+                                            </ui:Button>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                         </StackPanel>
                     </Border>
 

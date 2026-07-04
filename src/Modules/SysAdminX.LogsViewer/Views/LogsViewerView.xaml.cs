@@ -23,5 +23,6 @@ public partial class LogsViewerView : Page
         DataContext = ViewModel;
 
         InitializeComponent();
+        Loaded += (s, e) => ViewModel.RefreshLogsCommand.Execute(null);
     }
 }

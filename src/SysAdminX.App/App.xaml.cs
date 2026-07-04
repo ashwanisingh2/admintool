@@ -41,60 +41,68 @@ public partial class App : Application
     /// </summary>
     private async void OnStartup(object sender, StartupEventArgs e)
     {
-        // Configure Serilog
-        var logPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "SysAdminX", "Logs", "sysadminx-.log");
-
-        var logDir = Path.GetDirectoryName(logPath);
-        if (!string.IsNullOrEmpty(logDir) && !Directory.Exists(logDir))
+        try
         {
-            Directory.CreateDirectory(logDir);
+            // Configure Serilog
+            var logPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "SysAdminX", "Logs", "sysadminx-.log");
+
+            var logDir = Path.GetDirectoryName(logPath);
+            if (!string.IsNullOrEmpty(logDir) && !Directory.Exists(logDir))
+            {
+                Directory.CreateDirectory(logDir);
+            }
+
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Debug()
+                .WriteTo.File(logPath,
+                    rollingInterval: RollingInterval.Day,
+                    retainedFileCountLimit: 7,
+                    outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}] [{Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}")
+                .CreateLogger();
+
+            // Configure DI container
+            var services = new ServiceCollection();
+            ConfigureServices(services);
+            _serviceProvider = services.BuildServiceProvider();
+            Services = _serviceProvider;
+
+            // Show main window
+            var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
+            
+            // Apply saved theme
+            var settingsService = _serviceProvider.GetRequiredService<SysAdminX.Settings.Services.ISettingsService>();
+            var config = await settingsService.LoadSettingsAsync();
+            
+            if (config.Theme.Equals("Dark", System.StringComparison.OrdinalIgnoreCase))
+            {
+                Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Dark);
+            }
+            else
+            {
+                Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Light);
+            }
+
+            mainWindow.Show();
+
+            // Set up NavigationView page provider
+            var navView = mainWindow.GetNavigationView();
+            navView.SetPageService(_serviceProvider.GetRequiredService<IPageService>());
+
+            var navigationService = _serviceProvider.GetRequiredService<SysAdminX.Core.Interfaces.INavigationService>() as SysAdminX.Shell.Services.NavigationService;
+            navigationService?.SetNavigationView(navView);
+
+            // Navigate to dashboard
+            navigationService?.NavigateTo(typeof(DashboardView));
+
+            Log.Information("SysAdminX started successfully");
         }
-
-        Log.Logger = new LoggerConfiguration()
-            .MinimumLevel.Debug()
-            .WriteTo.File(logPath,
-                rollingInterval: RollingInterval.Day,
-                retainedFileCountLimit: 7,
-                outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}] [{Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}")
-            .CreateLogger();
-
-        // Configure DI container
-        var services = new ServiceCollection();
-        ConfigureServices(services);
-        _serviceProvider = services.BuildServiceProvider();
-        Services = _serviceProvider;
-
-        // Show main window
-        var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
-        
-        // Apply saved theme
-        var settingsService = _serviceProvider.GetRequiredService<SysAdminX.Settings.Services.ISettingsService>();
-        var config = await settingsService.LoadSettingsAsync();
-        
-        if (config.Theme.Equals("Dark", System.StringComparison.OrdinalIgnoreCase))
+        catch (Exception ex)
         {
-            Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Dark);
+            MessageBox.Show($"Fatal error during startup: {ex.Message}", "Startup Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            Current.Shutdown();
         }
-        else
-        {
-            Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Light);
-        }
-
-        mainWindow.Show();
-
-        // Set up NavigationView page provider
-        var navView = mainWindow.GetNavigationView();
-        navView.SetPageService(_serviceProvider.GetRequiredService<IPageService>());
-
-        var navigationService = _serviceProvider.GetRequiredService<SysAdminX.Core.Interfaces.INavigationService>() as SysAdminX.Shell.Services.NavigationService;
-        navigationService?.SetNavigationView(navView);
-
-        // Navigate to dashboard
-        navigationService?.NavigateTo(typeof(DashboardView));
-
-        Log.Information("SysAdminX started successfully");
     }
 
     /// <summary>
@@ -116,6 +124,7 @@ public partial class App : Application
         services.AddSingleton<ISystemHealthService, SystemHealthService>();
         services.AddSingleton<IRegistryService, RegistryService>();
         services.AddSingleton<IProcessExecutorService, ProcessExecutorService>();
+        services.AddSingleton<SysAdminX.Core.Interfaces.ITrimService, SysAdminX.Infrastructure.Services.TrimService>();
 
         // Navigation
         services.AddSingleton<SysAdminX.Shell.Services.NavigationService>();
@@ -172,6 +181,7 @@ public partial class App : Application
 
         // Modules - Logs Viewer
         services.AddSingleton<SysAdminX.LogsViewer.Services.ILogsService, SysAdminX.LogsViewer.Services.LogsService>();
+        services.AddSingleton<SysAdminX.Core.Interfaces.IBsodAnalyzerService, SysAdminX.Infrastructure.Services.BsodAnalyzerService>();
         services.AddTransient<SysAdminX.LogsViewer.ViewModels.LogsViewerViewModel>();
         services.AddTransient<SysAdminX.LogsViewer.Views.LogsViewerView>();
 
@@ -211,6 +221,46 @@ public partial class App : Application
         services.AddSingleton<SysAdminX.Core.Interfaces.IPortableToolsService, SysAdminX.Infrastructure.Services.PortableToolsService>();
         services.AddTransient<SysAdminX.PortableTools.ViewModels.PortableToolsViewModel>();
         services.AddTransient<SysAdminX.PortableTools.Views.PortableToolsView>();
+
+        // Modules - One Click Care
+        services.AddSingleton<SysAdminX.Core.Interfaces.IOneClickCareService, SysAdminX.Infrastructure.Services.OneClickCareService>();
+        services.AddTransient<SysAdminX.OneClickCare.ViewModels.OneClickCareViewModel>();
+        services.AddTransient<SysAdminX.OneClickCare.Views.OneClickCareView>();
+
+        // Modules - Auto Pilot
+        services.AddTransient<SysAdminX.AutoPilot.ViewModels.AutoPilotViewModel>();
+        services.AddTransient<SysAdminX.AutoPilot.Views.AutoPilotView>();
+
+        // Modules - System Restore
+        services.AddSingleton<SysAdminX.Core.Interfaces.ISystemRestoreService, SysAdminX.Infrastructure.Services.SystemRestoreService>();
+        services.AddTransient<SysAdminX.SystemRestore.ViewModels.SystemRestoreViewModel>();
+        services.AddTransient<SysAdminX.SystemRestore.Views.SystemRestoreView>();
+
+        // Modules - Privacy Cleaner
+        services.AddSingleton<SysAdminX.Core.Interfaces.IPrivacyCleanerService, SysAdminX.Infrastructure.Services.PrivacyCleanerService>();
+        services.AddTransient<SysAdminX.PrivacyCleaner.ViewModels.PrivacyCleanerViewModel>();
+        services.AddTransient<SysAdminX.PrivacyCleaner.Views.PrivacyCleanerView>();
+
+        // Modules - Browser Repair
+        services.AddSingleton<SysAdminX.Core.Interfaces.IBrowserRepairService, SysAdminX.Infrastructure.Services.BrowserRepairService>();
+        services.AddTransient<SysAdminX.BrowserRepair.ViewModels.BrowserRepairViewModel>();
+        services.AddTransient<SysAdminX.BrowserRepair.Views.BrowserRepairView>();
+
+        // Modules - Performance Mode
+        services.AddTransient<SysAdminX.PerformanceMode.ViewModels.PerformanceModeViewModel>();
+        services.AddTransient<SysAdminX.PerformanceMode.Views.PerformanceModeView>();
+
+        // Modules - Startup Manager
+        services.AddTransient<SysAdminX.StartupManager.ViewModels.StartupManagerViewModel>();
+        services.AddTransient<SysAdminX.StartupManager.Views.StartupManagerView>();
+
+        // Modules - Large File Finder
+        services.AddTransient<SysAdminX.LargeFileFinder.ViewModels.LargeFileFinderViewModel>();
+        services.AddTransient<SysAdminX.LargeFileFinder.Views.LargeFileFinderView>();
+
+        // Modules - Registry Manager
+        services.AddTransient<SysAdminX.RegistryManager.ViewModels.RegistryManagerViewModel>();
+        services.AddTransient<SysAdminX.RegistryManager.Views.RegistryManagerView>();
     }
 
     /// <summary>

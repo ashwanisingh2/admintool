@@ -25,6 +25,9 @@ public partial class TroubleshootingViewModel : ObservableObject
     private readonly ITroubleshootingService _troubleshootingService;
 
     [ObservableProperty]
+    private string _ramTestResult = "No results found";
+
+    [ObservableProperty]
     private ObservableCollection<TroubleshootingActionModel> _actionHistory = new();
 
     public TroubleshootingViewModel(ILogger<TroubleshootingViewModel> logger, ITroubleshootingService troubleshootingService)
@@ -161,6 +164,30 @@ public partial class TroubleshootingViewModel : ObservableObject
         if (result.IsSuccess && result.Value != null)
         {
             ActionHistory.Insert(0, result.Value);
+        }
+    }
+
+    [RelayCommand]
+    public async Task ScheduleRamTestAsync(CancellationToken ct)
+    {
+        var result = await _troubleshootingService.ScheduleRamTestAsync(ct);
+        if (result.IsSuccess && result.Value != null)
+        {
+            ActionHistory.Insert(0, result.Value);
+        }
+    }
+
+    [RelayCommand]
+    public async Task CheckRamResultAsync(CancellationToken ct)
+    {
+        var result = await _troubleshootingService.CheckRamTestResultAsync(ct);
+        if (result.IsSuccess)
+        {
+            RamTestResult = result.Value ?? "No results found";
+        }
+        else
+        {
+            RamTestResult = "Failed to retrieve results: " + result.ErrorMessage;
         }
     }
 }

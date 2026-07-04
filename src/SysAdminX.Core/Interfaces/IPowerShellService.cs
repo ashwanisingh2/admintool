@@ -33,7 +33,16 @@ public interface IPowerShellService
     /// <param name="parameters">Optional parameters to pass to the script.</param>
     /// <param name="ct">Cancellation token for the operation.</param>
     /// <returns>A result containing the script output.</returns>
-    Task<Result<string>> ExecuteScriptAsync(string scriptPath, Dictionary<string, object>? parameters = null, CancellationToken ct = default);
+    Task<Result<string>> ExecuteScriptFileAsync(string scriptPath, Dictionary<string, object>? parameters = null, CancellationToken ct = default);
+
+    /// <summary>
+    /// Executes PowerShell script content directly.
+    /// </summary>
+    /// <param name="scriptContent">The PowerShell script content.</param>
+    /// <param name="parameters">Optional parameters to pass to the script.</param>
+    /// <param name="ct">Cancellation token for the operation.</param>
+    /// <returns>A result containing the script output.</returns>
+    Task<Result<string>> ExecuteScriptContentAsync(string scriptContent, Dictionary<string, object>? parameters = null, CancellationToken ct = default);
 
     /// <summary>
     /// Executes a PowerShell command and returns the output as structured objects.
@@ -42,4 +51,16 @@ public interface IPowerShellService
     /// <param name="ct">Cancellation token for the operation.</param>
     /// <returns>A result containing a list of property dictionaries.</returns>
     Task<Result<List<Dictionary<string, object?>>>> ExecuteCommandWithObjectsAsync(string command, CancellationToken ct = default);
+
+    /// <summary>
+    /// Executes a PowerShell script and streams the output via a callback.
+    /// </summary>
+    Task<Result<bool>> ExecuteStreamingAsync(string scriptPath, Dictionary<string, object>? parameters, Action<string> onOutput, CancellationToken ct = default);
+
+    /// <summary>
+    /// Extracts an embedded script from the assembly.
+    /// </summary>
+    /// <param name="resourceName">The name of the embedded resource.</param>
+    /// <returns>The contents of the embedded script.</returns>
+    Task<string> ExtractEmbeddedScriptAsync(string resourceName, CancellationToken ct = default);
 }

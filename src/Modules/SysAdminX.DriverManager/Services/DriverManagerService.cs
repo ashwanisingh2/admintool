@@ -164,7 +164,7 @@ public class DriverManagerService : IDriverManagerService
         var lines = output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
         
         DriverInfoModel? currentDevice = null;
-        string tempDesc = "", tempClass = "", tempMfg = "", tempStatus = "", tempInf = "";
+        string tempDesc = "", tempClass = "", tempMfg = "", tempStatus = "", tempInf = "", tempHwid = "";
 
         foreach (var line in lines)
         {
@@ -178,11 +178,11 @@ public class DriverManagerService : IDriverManagerService
             {
                 if (currentDevice != null)
                 {
-                    currentDevice = EnrichDevice(currentDevice, tempInf, tempDesc, tempClass, tempMfg, tempStatus, driverDict);
+                    currentDevice = EnrichDevice(currentDevice, tempInf, tempDesc, tempClass, tempMfg, tempStatus, tempHwid, driverDict);
                     list.Add(currentDevice);
                 }
                 currentDevice = new DriverInfoModel();
-                tempDesc = ""; tempClass = ""; tempMfg = ""; tempStatus = ""; tempInf = "";
+                tempDesc = ""; tempClass = ""; tempMfg = ""; tempStatus = ""; tempInf = ""; tempHwid = val;
             }
             else if (key == "Device Description") tempDesc = val;
             else if (key == "Class Name") tempClass = val;
@@ -193,14 +193,14 @@ public class DriverManagerService : IDriverManagerService
 
         if (currentDevice != null)
         {
-            currentDevice = EnrichDevice(currentDevice, tempInf, tempDesc, tempClass, tempMfg, tempStatus, driverDict);
+            currentDevice = EnrichDevice(currentDevice, tempInf, tempDesc, tempClass, tempMfg, tempStatus, tempHwid, driverDict);
             list.Add(currentDevice);
         }
 
         return list;
     }
 
-    private DriverInfoModel EnrichDevice(DriverInfoModel baseModel, string inf, string desc, string cls, string mfg, string status, Dictionary<string, (string Version, string Date, string Provider)> driverDict)
+    private DriverInfoModel EnrichDevice(DriverInfoModel baseModel, string inf, string desc, string cls, string mfg, string status, string hwid, Dictionary<string, (string Version, string Date, string Provider)> driverDict)
     {
         var model = baseModel with
         {
@@ -208,7 +208,8 @@ public class DriverManagerService : IDriverManagerService
             ClassName = cls,
             Manufacturer = mfg,
             Status = status,
-            InfName = inf
+            InfName = inf,
+            HardwareId = hwid
         };
 
         if (!string.IsNullOrEmpty(inf) && driverDict.TryGetValue(inf, out var dInfo))
@@ -242,6 +243,92 @@ public class DriverManagerService : IDriverManagerService
         }
 
         return model;
+    }
+
+    private async Task<string> ExtractScriptAsync()
+    {
+        var assembly = typeof(DriverManagerService).Assembly;
+        var resourceName = "SysAdminX.DriverManager.Scripts.repair_driver.ps1";
+        var tempPath = Path.Combine(Path.GetTempPath(), "repair_driver.ps1");
+        
+        using var stream = assembly.GetManifestResourceStream(resourceName);
+        if (stream == null) throw new FileNotFoundException($"Resource {resourceName} not found.");
+        
+        using var fileStream = File.Create(tempPath);
+        await stream.CopyToAsync(fileStream);
+        
+        return tempPath;
+    }
+
+    public async Task<Result<string>> DisableDriverWithBackupAsync(string hardwareId, bool safeMode, CancellationToken ct = default)
+    {
+        try
+        {
+            var scriptPath = await ExtractScriptAsync();
+            var safeModeStr = safeMode ? "$true" : "$false";
+            var result = await _processService.ExecuteAsync("powershell", $"-NoProfile -ExecutionPolicy Bypass -File \"{scriptPath}\" -Action disable -HardwareId \"{hardwareId}\" -SafeMode {safeModeStr}", true, ct);
+            
+            if (result.Value != null && result.Value.Contains("[SAFE_MODE_ABORT]"))
+            {
+                return Result<string>.Failure("Operation aborted: Registry backup failed and Safe Mode is enabled.");
+            }
+            if (!result.IsSuccess)
+            {
+                return Result<string>.Failure(result.ErrorMessage ?? "Failed to disable driver");
+            }
+            
+            var backupPathLine = result.Value?.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                                      .FirstOrDefault(l => l.StartsWith("BACKUP_PATH:"));
+            var backupPath = backupPathLine != null ? backupPathLine.Substring("BACKUP_PATH:".Length) : string.Empty;
+            
+            return Result<string>.Success(backupPath);
+        }
+        catch (Exception ex)
+        {
+            return Result<string>.Failure(ex.Message, ex);
+        }
+    }
+
+    public async Task<Result> EnableDriverAsync(string hardwareId, CancellationToken ct = default)
+    {
+        try
+        {
+            var scriptPath = await ExtractScriptAsync();
+            var result = await _processService.ExecuteAsync("powershell", $"-NoProfile -ExecutionPolicy Bypass -File \"{scriptPath}\" -Action enable -HardwareId \"{hardwareId}\"", true, ct);
+            return result.IsSuccess ? Result.Success() : Result.Failure(result.ErrorMessage ?? "Failed to enable driver");
+        }
+        catch (Exception ex)
+        {
+            return Result.Failure(ex.Message, ex);
+        }
+    }
+
+    public async Task<Result> RollbackDriverAsync(string hardwareId, CancellationToken ct = default)
+    {
+        try
+        {
+            var scriptPath = await ExtractScriptAsync();
+            var result = await _processService.ExecuteAsync("powershell", $"-NoProfile -ExecutionPolicy Bypass -File \"{scriptPath}\" -Action rollback -HardwareId \"{hardwareId}\"", true, ct);
+            return result.IsSuccess ? Result.Success() : Result.Failure(result.ErrorMessage ?? "Failed to rollback driver");
+        }
+        catch (Exception ex)
+        {
+            return Result.Failure(ex.Message, ex);
+        }
+    }
+
+    public async Task<Result> RestoreFromBackupAsync(string backupFilePath, CancellationToken ct = default)
+    {
+        try
+        {
+            var scriptPath = await ExtractScriptAsync();
+            var result = await _processService.ExecuteAsync("powershell", $"-NoProfile -ExecutionPolicy Bypass -File \"{scriptPath}\" -Action restore -BackupFilePath \"{backupFilePath}\"", true, ct);
+            return result.IsSuccess ? Result.Success() : Result.Failure(result.ErrorMessage ?? "Failed to restore backup");
+        }
+        catch (Exception ex)
+        {
+            return Result.Failure(ex.Message, ex);
+        }
     }
 
     public async Task<Result<List<string>>> ScanDriverUpdatesAsync(CancellationToken ct = default)

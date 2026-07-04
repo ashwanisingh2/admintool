@@ -36,8 +36,7 @@ public partial class ReportsViewModel : ObservableObject
     {
         _logger = logger;
         _reportService = reportService;
-        
-        LoadHistoryCommand.Execute(null);
+
     }
 
     [RelayCommand]

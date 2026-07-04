@@ -17,7 +17,7 @@
         <Style x:Key="ErrorText" TargetType="TextBlock">
             <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCriticalBrush}" />
             <Style.Triggers>
-                <DataTrigger Binding="{Binding IsError}" Value="True">
+                <DataTrigger Binding="{Binding HasError}" Value="True">
                     <Setter Property="FontWeight" Value="SemiBold" />
                 </DataTrigger>
             </Style.Triggers>
@@ -93,6 +93,20 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <ui:ToggleSwitch IsChecked="{Binding IsRegistrySafeModeEnabled}"
+                                     Content="Registry Safe Mode"
+                                     ToolTip="Aborts disable operations if a registry backup cannot be created."
+                                     Margin="0,0,16,0"
+                                     VerticalAlignment="Center" />
+                    <ui:Button Appearance="Secondary"
+                               Margin="0,0,8,0"
+                               ToolTip="Restore Driver Registry Backup"
+                               Command="{Binding RestoreBackupCommand}">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="History24" Margin="0,0,8,0" />
+                            <TextBlock Text="Restore Backup" />
+                        </StackPanel>
+                    </ui:Button>
                     <ui:Button Appearance="Secondary"
                                Margin="0,0,8,0"
                                ToolTip="Open Device Manager"
@@ -134,7 +148,7 @@
                             <ui:TextBox Grid.Column="0"
                                         PlaceholderText="Search by name, class, or provider..."
                                         Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}"
-                                        Icon="Search24" />
+                                        Icon="{ui:SymbolIcon Search24}" />
 
                             <CheckBox Grid.Column="1" 
                                       Content="Hide Microsoft Drivers" 
@@ -179,6 +193,36 @@
                                                        Style="{StaticResource ErrorText}" 
                                                        VerticalAlignment="Center"
                                                        Margin="12,0,0,0" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                
+                                <DataGridTemplateColumn Header="Actions" Width="1.5*">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal">
+                                                <ui:Button Appearance="Secondary" 
+                                                           ToolTip="Enable"
+                                                           Command="{Binding DataContext.EnableDriverCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                           CommandParameter="{Binding}"
+                                                           Margin="0,0,4,0">
+                                                    <ui:SymbolIcon Symbol="Play24" />
+                                                </ui:Button>
+                                                <ui:Button Appearance="Danger" 
+                                                           ToolTip="Disable"
+                                                           Command="{Binding DataContext.DisableDriverCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                           CommandParameter="{Binding}"
+                                                           Margin="0,0,4,0">
+                                                    <ui:SymbolIcon Symbol="Stop24" />
+                                                </ui:Button>
+                                                <ui:Button Appearance="Secondary" 
+                                                           ToolTip="Rollback"
+                                                           Command="{Binding DataContext.RollbackDriverCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                           CommandParameter="{Binding}"
+                                                           Margin="0,0,4,0">
+                                                    <ui:SymbolIcon Symbol="ArrowUndo24" />
+                                                </ui:Button>
+                                            </StackPanel>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>

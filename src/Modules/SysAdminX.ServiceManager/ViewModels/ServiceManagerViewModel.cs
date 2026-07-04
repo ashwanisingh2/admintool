@@ -95,12 +95,19 @@ public partial class ServiceManagerViewModel : ObservableObject
         if (SelectedService == null) return;
 
         IsLoading = true;
-        var result = await _serviceManagerService.StartServiceAsync(SelectedService.Name);
-        if (!result.IsSuccess)
+        try
         {
-            ErrorMessage = result.ErrorMessage ?? "Failed to start service.";
+            var result = await _serviceManagerService.StartServiceAsync(SelectedService.Name);
+            if (!result.IsSuccess)
+            {
+                ErrorMessage = result.ErrorMessage ?? "Failed to start service.";
+            }
+            await LoadServicesAsync();
         }
-        await LoadServicesAsync();
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
     [RelayCommand]
@@ -109,12 +116,19 @@ public partial class ServiceManagerViewModel : ObservableObject
         if (SelectedService == null) return;
 
         IsLoading = true;
-        var result = await _serviceManagerService.StopServiceAsync(SelectedService.Name);
-        if (!result.IsSuccess)
+        try
         {
-            ErrorMessage = result.ErrorMessage ?? "Failed to stop service.";
+            var result = await _serviceManagerService.StopServiceAsync(SelectedService.Name);
+            if (!result.IsSuccess)
+            {
+                ErrorMessage = result.ErrorMessage ?? "Failed to stop service.";
+            }
+            await LoadServicesAsync();
         }
-        await LoadServicesAsync();
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
     [RelayCommand]
@@ -123,12 +137,19 @@ public partial class ServiceManagerViewModel : ObservableObject
         if (SelectedService == null) return;
 
         IsLoading = true;
-        var result = await _serviceManagerService.RestartServiceAsync(SelectedService.Name);
-        if (!result.IsSuccess)
+        try
         {
-            ErrorMessage = result.ErrorMessage ?? "Failed to restart service.";
+            var result = await _serviceManagerService.RestartServiceAsync(SelectedService.Name);
+            if (!result.IsSuccess)
+            {
+                ErrorMessage = result.ErrorMessage ?? "Failed to restart service.";
+            }
+            await LoadServicesAsync();
         }
-        await LoadServicesAsync();
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
     [RelayCommand]
@@ -137,12 +158,19 @@ public partial class ServiceManagerViewModel : ObservableObject
         if (SelectedService == null || string.IsNullOrEmpty(startMode)) return;
 
         IsLoading = true;
-        var result = await _serviceManagerService.ChangeStartupTypeAsync(SelectedService.Name, startMode);
-        if (!result.IsSuccess)
+        try
         {
-            ErrorMessage = result.ErrorMessage ?? "Failed to change startup type.";
+            var result = await _serviceManagerService.ChangeStartupTypeAsync(SelectedService.Name, startMode);
+            if (!result.IsSuccess)
+            {
+                ErrorMessage = result.ErrorMessage ?? "Failed to change startup type.";
+            }
+            await LoadServicesAsync();
         }
-        await LoadServicesAsync();
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
     partial void OnSearchQueryChanged(string value)

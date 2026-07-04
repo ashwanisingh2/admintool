@@ -13,6 +13,7 @@ namespace SysAdminX.Core.Models;
 public record DriverInfoModel
 {
     public string DeviceName { get; init; } = string.Empty;
+    public string HardwareId { get; init; } = string.Empty;
     public string ClassName { get; init; } = string.Empty;
     public string Manufacturer { get; init; } = string.Empty;
     public string Version { get; init; } = string.Empty;

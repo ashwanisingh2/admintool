@@ -22,11 +22,13 @@ public class TroubleshootingService : ITroubleshootingService
 {
     private readonly ILogger<TroubleshootingService> _logger;
     private readonly IProcessExecutorService _processService;
+    private readonly IPowerShellService _powerShellService;
 
-    public TroubleshootingService(ILogger<TroubleshootingService> logger, IProcessExecutorService processService)
+    public TroubleshootingService(ILogger<TroubleshootingService> logger, IProcessExecutorService processService, IPowerShellService powerShellService)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _processService = processService ?? throw new ArgumentNullException(nameof(processService));
+        _powerShellService = powerShellService ?? throw new ArgumentNullException(nameof(powerShellService));
     }
 
     public async Task<Result<TroubleshootingActionModel>> RunSfcScanAsync(CancellationToken ct = default)
@@ -34,7 +36,7 @@ public class TroubleshootingService : ITroubleshootingService
         _logger.LogInformation("Launching SFC Scan");
         // sfc /scannow needs elevation
         // We execute cmd.exe /k to keep the window open so the user can see the result
-        var result = await _processService.ExecuteAsync("cmd.exe", "/c sfc /scannow & pause", true, ct);
+        var result = await _processService.ExecuteAsync("cmd.exe", "/c sfc /scannow", true, ct);
         
         return Result<TroubleshootingActionModel>.Success(new TroubleshootingActionModel
         {
@@ -48,7 +50,7 @@ public class TroubleshootingService : ITroubleshootingService
     public async Task<Result<TroubleshootingActionModel>> RunDismCheckHealthAsync(CancellationToken ct = default)
     {
         _logger.LogInformation("Launching DISM CheckHealth");
-        var result = await _processService.ExecuteAsync("cmd.exe", "/c DISM /Online /Cleanup-Image /CheckHealth & pause", true, ct);
+        var result = await _processService.ExecuteAsync("cmd.exe", "/c DISM /Online /Cleanup-Image /CheckHealth", true, ct);
         
         return Result<TroubleshootingActionModel>.Success(new TroubleshootingActionModel
         {
@@ -62,7 +64,7 @@ public class TroubleshootingService : ITroubleshootingService
     public async Task<Result<TroubleshootingActionModel>> RunDismRestoreHealthAsync(CancellationToken ct = default)
     {
         _logger.LogInformation("Launching DISM RestoreHealth");
-        var result = await _processService.ExecuteAsync("cmd.exe", "/c DISM /Online /Cleanup-Image /RestoreHealth & pause", true, ct);
+        var result = await _processService.ExecuteAsync("cmd.exe", "/c DISM /Online /Cleanup-Image /RestoreHealth", true, ct);
         
         return Result<TroubleshootingActionModel>.Success(new TroubleshootingActionModel
         {
@@ -152,7 +154,7 @@ public class TroubleshootingService : ITroubleshootingService
     public async Task<Result<TroubleshootingActionModel>> RunChkdskAsync(CancellationToken ct = default)
     {
         _logger.LogInformation("Launching CHKDSK");
-        var result = await _processService.ExecuteAsync("cmd.exe", "/c echo y | chkdsk C: /f /r & pause", true, ct);
+        var result = await _processService.ExecuteAsync("cmd.exe", "/c echo y | chkdsk C: /f /r", true, ct);
         
         return Result<TroubleshootingActionModel>.Success(new TroubleshootingActionModel
         {
@@ -169,7 +171,7 @@ public class TroubleshootingService : ITroubleshootingService
         string cmds = "net stop wuauserv & net stop bits & net stop cryptSvc & net stop msiserver & " +
                       "ren C:\\Windows\\SoftwareDistribution SoftwareDistribution.old & " +
                       "ren C:\\Windows\\System32\\catroot2 catroot2.old & " +
-                      "net start wuauserv & net start bits & net start cryptSvc & net start msiserver & pause";
+                      "net start wuauserv & net start bits & net start cryptSvc & net start msiserver";
         var result = await _processService.ExecuteAsync("cmd.exe", $"/c {cmds}", true, ct);
         
         return Result<TroubleshootingActionModel>.Success(new TroubleshootingActionModel
@@ -184,7 +186,7 @@ public class TroubleshootingService : ITroubleshootingService
     public async Task<Result<TroubleshootingActionModel>> FixPrintSpoolerAsync(CancellationToken ct = default)
     {
         _logger.LogInformation("Fixing Print Spooler");
-        string cmds = "net stop spooler & del /Q /F /S \"%systemroot%\\System32\\Spool\\Printers\\*.*\" & net start spooler & pause";
+        string cmds = "net stop spooler & del /Q /F /S \"%systemroot%\\System32\\Spool\\Printers\\*.*\" & net start spooler";
         var result = await _processService.ExecuteAsync("cmd.exe", $"/c {cmds}", true, ct);
         
         return Result<TroubleshootingActionModel>.Success(new TroubleshootingActionModel
@@ -199,7 +201,7 @@ public class TroubleshootingService : ITroubleshootingService
     public async Task<Result<TroubleshootingActionModel>> FlushDnsAsync(CancellationToken ct = default)
     {
         _logger.LogInformation("Flushing DNS Cache");
-        var result = await _processService.ExecuteAsync("cmd.exe", "/c ipconfig /flushdns & pause", true, ct);
+        var result = await _processService.ExecuteAsync("cmd.exe", "/c ipconfig /flushdns", true, ct);
         
         return Result<TroubleshootingActionModel>.Success(new TroubleshootingActionModel
         {
@@ -213,7 +215,7 @@ public class TroubleshootingService : ITroubleshootingService
     public async Task<Result<TroubleshootingActionModel>> ResetWinsockAsync(CancellationToken ct = default)
     {
         _logger.LogInformation("Resetting Winsock");
-        var result = await _processService.ExecuteAsync("cmd.exe", "/c netsh winsock reset & pause", true, ct);
+        var result = await _processService.ExecuteAsync("cmd.exe", "/c netsh winsock reset", true, ct);
         
         return Result<TroubleshootingActionModel>.Success(new TroubleshootingActionModel
         {
@@ -227,7 +229,7 @@ public class TroubleshootingService : ITroubleshootingService
     public async Task<Result<TroubleshootingActionModel>> ResetTcpIpAsync(CancellationToken ct = default)
     {
         _logger.LogInformation("Resetting TCP/IP stack");
-        var result = await _processService.ExecuteAsync("cmd.exe", "/c netsh int ip reset & pause", true, ct);
+        var result = await _processService.ExecuteAsync("cmd.exe", "/c netsh int ip reset", true, ct);
         
         return Result<TroubleshootingActionModel>.Success(new TroubleshootingActionModel
         {
@@ -264,7 +266,7 @@ public class TroubleshootingService : ITroubleshootingService
         _logger.LogInformation("Resetting Windows Search Index");
         string cmds = "net stop WSearch & " +
                       "rd /s /q \"%ProgramData%\\Microsoft\\Search\\Data\\Applications\\Windows\" & " +
-                      "net start WSearch & pause";
+                      "net start WSearch";
         var result = await _processService.ExecuteAsync("cmd.exe", $"/c {cmds}", true, ct);
         
         return Result<TroubleshootingActionModel>.Success(new TroubleshootingActionModel
@@ -274,5 +276,78 @@ public class TroubleshootingService : ITroubleshootingService
             IsSuccess = result.IsSuccess,
             OutputMessage = result.IsSuccess ? "Windows Search index reset successfully." : result.ErrorMessage ?? "Failed to reset Windows Search."
         });
+    }
+
+    private async Task<string> ExtractScriptAsync(string resourceName)
+    {
+        var tempFile = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.ps1");
+        using var stream = typeof(TroubleshootingService).Assembly.GetManifestResourceStream(resourceName);
+        if (stream == null) throw new FileNotFoundException($"Embedded resource {resourceName} not found.");
+        using var fileStream = File.Create(tempFile);
+        await stream.CopyToAsync(fileStream);
+        return tempFile;
+    }
+
+    public async Task<Result<TroubleshootingActionModel>> ScheduleRamTestAsync(CancellationToken ct = default)
+    {
+        _logger.LogInformation("Scheduling RAM Test");
+        string tempFile = null;
+        try
+        {
+            tempFile = await ExtractScriptAsync("SysAdminX.Troubleshooting.Scripts.ram_diagnostic.ps1");
+            var parameters = new System.Collections.Generic.Dictionary<string, object>
+            {
+                { "Action", "Schedule" }
+            };
+            var result = await _powerShellService.ExecuteScriptFileAsync(tempFile, parameters, ct);
+            return Result<TroubleshootingActionModel>.Success(new TroubleshootingActionModel
+            {
+                ActionName = "Schedule RAM Test",
+                Description = "Schedules Windows Memory Diagnostic on next restart.",
+                IsSuccess = result.IsSuccess,
+                OutputMessage = result.IsSuccess ? "Windows Memory Diagnostic tool launched." : result.ErrorMessage ?? "Failed to launch MdSched."
+            });
+        }
+        finally
+        {
+            if (tempFile != null && File.Exists(tempFile))
+            {
+                try { File.Delete(tempFile); } catch { }
+            }
+        }
+    }
+
+    public async Task<Result<string>> CheckRamTestResultAsync(CancellationToken ct = default)
+    {
+        _logger.LogInformation("Checking RAM Test Result");
+        string tempFile = null;
+        try
+        {
+            tempFile = await ExtractScriptAsync("SysAdminX.Troubleshooting.Scripts.ram_diagnostic.ps1");
+            var parameters = new System.Collections.Generic.Dictionary<string, object>
+            {
+                { "Action", "CheckResult" }
+            };
+            var result = await _powerShellService.ExecuteScriptFileAsync(tempFile, parameters, ct);
+            if (!result.IsSuccess)
+            {
+                return Result<string>.Failure(result.ErrorMessage);
+            }
+            
+            // Output might have newlines from powershell, trim it
+            var output = result.Value?.Trim();
+            
+            if (string.IsNullOrEmpty(output))
+                return Result<string>.Success("No results found");
+                
+            return Result<string>.Success(output);
+        }
+        finally
+        {
+            if (tempFile != null && File.Exists(tempFile))
+            {
+                try { File.Delete(tempFile); } catch { }
+            }
+        }
     }
 }

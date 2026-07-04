@@ -29,4 +29,6 @@ public interface ITroubleshootingService
     Task<Result<TroubleshootingActionModel>> ResetTcpIpAsync(CancellationToken ct = default);
     Task<Result<TroubleshootingActionModel>> RebuildIconCacheAsync(CancellationToken ct = default);
     Task<Result<TroubleshootingActionModel>> ResetWindowsSearchAsync(CancellationToken ct = default);
+    Task<Result<TroubleshootingActionModel>> ScheduleRamTestAsync(CancellationToken ct = default);
+    Task<Result<string>> CheckRamTestResultAsync(CancellationToken ct = default);
 }

@@ -47,10 +47,84 @@ public partial class DriverManagerViewModel : ObservableObject
     [ObservableProperty]
     private bool _showThirdPartyOnly;
 
+    [ObservableProperty]
+    private bool _isRegistrySafeModeEnabled = true;
+
     public DriverManagerViewModel(ILogger<DriverManagerViewModel> logger, IDriverManagerService driverService)
     {
         _logger = logger;
         _driverService = driverService;
+    }
+
+    [RelayCommand]
+    private async Task DisableDriverAsync(DriverInfoModel? driver)
+    {
+        if (driver == null || string.IsNullOrWhiteSpace(driver.HardwareId)) return;
+        var result = await _driverService.DisableDriverWithBackupAsync(driver.HardwareId, IsRegistrySafeModeEnabled, CancellationToken.None);
+        if (result.IsSuccess)
+        {
+            System.Windows.MessageBox.Show($"Driver Disabled.\nBackup saved to:\n{result.Value}", "Success", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+            await RefreshAsync(CancellationToken.None);
+        }
+        else
+        {
+            System.Windows.MessageBox.Show($"Failed to disable driver:\n{result.ErrorMessage}", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+        }
+    }
+
+    [RelayCommand]
+    private async Task EnableDriverAsync(DriverInfoModel? driver)
+    {
+        if (driver == null || string.IsNullOrWhiteSpace(driver.HardwareId)) return;
+        var result = await _driverService.EnableDriverAsync(driver.HardwareId, CancellationToken.None);
+        if (result.IsSuccess)
+        {
+            System.Windows.MessageBox.Show("Driver Enabled.", "Success", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+            await RefreshAsync(CancellationToken.None);
+        }
+        else
+        {
+            System.Windows.MessageBox.Show($"Failed to enable driver:\n{result.ErrorMessage}", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+        }
+    }
+
+    [RelayCommand]
+    private async Task RollbackDriverAsync(DriverInfoModel? driver)
+    {
+        if (driver == null || string.IsNullOrWhiteSpace(driver.HardwareId)) return;
+        var result = await _driverService.RollbackDriverAsync(driver.HardwareId, CancellationToken.None);
+        if (result.IsSuccess)
+        {
+            System.Windows.MessageBox.Show("Driver Rolled Back successfully.", "Success", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+            await RefreshAsync(CancellationToken.None);
+        }
+        else
+        {
+            System.Windows.MessageBox.Show($"Failed to rollback driver:\n{result.ErrorMessage}", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+        }
+    }
+
+    [RelayCommand]
+    private async Task RestoreBackupAsync()
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Filter = "Registry Files (*.reg)|*.reg|All Files (*.*)|*.*",
+            Title = "Select Driver Backup File"
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            var result = await _driverService.RestoreFromBackupAsync(dialog.FileName, CancellationToken.None);
+            if (result.IsSuccess)
+            {
+                System.Windows.MessageBox.Show("Backup restored successfully.", "Success", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+            }
+            else
+            {
+                System.Windows.MessageBox.Show($"Failed to restore backup:\n{result.ErrorMessage}", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            }
+        }
     }
 
     [RelayCommand]

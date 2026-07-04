@@ -52,8 +52,7 @@ public partial class SecurityCenterViewModel : ObservableObject
     {
         _logger = logger;
         _securityService = securityService;
-        
-        LoadDataCommand.Execute(null);
+
     }
 
     [RelayCommand]

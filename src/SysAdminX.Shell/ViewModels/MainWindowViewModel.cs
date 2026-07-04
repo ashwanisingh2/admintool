@@ -44,13 +44,7 @@ public partial class MainWindowViewModel : ObservableObject
     public ObservableCollection<NavigationMenuItem> FooterItems { get; } = new();
 
     [ObservableProperty]
-    private NavigationMenuItem? _selectedMenuItem;
-
-    [ObservableProperty]
     private string _currentPageTitle = "Dashboard";
-
-    [ObservableProperty]
-    private bool _isNavigating;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MainWindowViewModel"/> class.

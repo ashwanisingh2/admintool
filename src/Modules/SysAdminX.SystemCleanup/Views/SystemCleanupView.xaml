@@ -7,7 +7,7 @@
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     xmlns:viewmodels="clr-namespace:SysAdminX.SystemCleanup.ViewModels"
     mc:Ignorable="d"
-    d:DesignHeight="600" d:DesignWidth="800"
+    d:DesignHeight="800" d:DesignWidth="800"
     Loaded="OnPageLoaded"
     d:DataContext="{d:DesignInstance Type=viewmodels:SystemCleanupViewModel, IsDesignTimeCreatable=False}"
     Title="System Cleanup">
@@ -20,7 +20,9 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
@@ -33,8 +35,40 @@
             Severity="Error"
             Margin="0,0,0,16" />
 
+        <!-- Component Store Section -->
+        <ui:Card Grid.Row="2" Margin="0,0,0,16">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Text="Component Store (WinSxS)" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,8" />
+                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,16">
+                    <TextBlock Text="Store Size: " FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding ComponentStoreSize}" Margin="0,0,16,0" />
+                    <TextBlock Text="Reclaimable: " FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding ReclaimableSpace}" />
+                </StackPanel>
+                
+                <Grid Grid.Row="2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <ProgressBar Grid.Column="0" Minimum="0" Maximum="100" Value="{Binding DismProgress}" Height="4" VerticalAlignment="Center" Margin="0,0,16,0" Visibility="{Binding IsDismRunning, Converter={StaticResource BoolToVis}}" />
+                    
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <ui:Button Command="{Binding AnalyzeComponentStoreCommand}" Content="Analyze" Icon="{ui:SymbolIcon Search24}" Margin="0,0,8,0" />
+                        <ui:Button Command="{Binding CleanupComponentStoreCommand}" Content="Cleanup" Icon="{ui:SymbolIcon Delete24}" Appearance="Primary" />
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </ui:Card>
+
         <ui:DataGrid
-            Grid.Row="2"
+            Grid.Row="3"
             ItemsSource="{Binding CleanupItems}"
             AutoGenerateColumns="False"
             CanUserAddRows="False">
@@ -46,12 +80,31 @@
             </DataGrid.Columns>
         </ui:DataGrid>
 
-        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,16,0,0" HorizontalAlignment="Right">
+        <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="0,16,0,0" HorizontalAlignment="Right">
             <ui:Button Command="{Binding LoadItemsCommand}" Content="Scan" Icon="{ui:SymbolIcon Search24}" Margin="0,0,8,0" />
             <ui:Button Command="{Binding PerformCleanupCommand}" Content="Clean Selected" Icon="{ui:SymbolIcon Delete24}" Appearance="Danger" />
         </StackPanel>
 
-        <Grid Grid.Row="0" Grid.RowSpan="4" Background="#80000000" Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}">
+        <!-- Undo Banner -->
+        <ui:InfoBar
+            Grid.Row="5"
+            Margin="0,16,0,0"
+            IsOpen="{Binding IsUndoVisible}"
+            Severity="Success"
+            IsClosable="False">
+            <ui:InfoBar.Message>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Cleanup completed. Undo available for " VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding UndoCountdown}" FontWeight="Bold" VerticalAlignment="Center" />
+                    <TextBlock Text=" seconds." VerticalAlignment="Center" />
+                </StackPanel>
+            </ui:InfoBar.Message>
+            <ui:InfoBar.ActionButton>
+                <ui:Button Command="{Binding UndoCommand}" Content="Undo" Appearance="Secondary" Margin="16,0,0,0" />
+            </ui:InfoBar.ActionButton>
+        </ui:InfoBar>
+
+        <Grid Grid.Row="0" Grid.RowSpan="6" Background="#80000000" Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}">
             <ui:ProgressRing IsIndeterminate="True" Width="48" Height="48" HorizontalAlignment="Center" VerticalAlignment="Center" />
         </Grid>
     </Grid>

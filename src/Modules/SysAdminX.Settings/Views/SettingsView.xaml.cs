@@ -23,5 +23,6 @@ public partial class SettingsView : Page
         DataContext = ViewModel;
 
         InitializeComponent();
+        Loaded += (s, e) => ViewModel.LoadSettingsCommand.Execute(null);
     }
 }

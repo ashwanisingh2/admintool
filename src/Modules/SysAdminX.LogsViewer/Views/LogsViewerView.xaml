@@ -13,7 +13,6 @@
     <Grid Margin="24">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
@@ -49,124 +48,208 @@
             </StackPanel>
         </Grid>
 
-        <!-- Filters -->
-        <Border Grid.Row="1" 
-                Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
-                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
-                BorderThickness="1"
-                CornerRadius="8"
-                Padding="16" Margin="0,0,0,16">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
+        <!-- Tabs -->
+        <TabControl Grid.Row="1" Background="Transparent" BorderThickness="0">
+            <!-- Event Logs Tab -->
+            <TabItem Header="Event Logs">
+                <Grid Margin="0,16,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <!-- Filters -->
+                    <Border Grid.Row="0" 
+                            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="16" Margin="0,0,0,16">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
 
-                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="Levels:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0" />
-                    
-                    <!-- INFO Checkbox -->
-                    <CheckBox IsChecked="{Binding ShowInfo}" Margin="0,0,16,0">
-                        <StackPanel Orientation="Horizontal">
-                            <ui:SymbolIcon Symbol="Info24" Foreground="{DynamicResource SystemFillColorNeutralBrush}" Margin="0,0,4,0"/>
-                            <TextBlock Text="Info" />
-                        </StackPanel>
-                    </CheckBox>
-                    
-                    <!-- WARN Checkbox -->
-                    <CheckBox IsChecked="{Binding ShowWarn}" Margin="0,0,16,0">
-                        <StackPanel Orientation="Horizontal">
-                            <ui:SymbolIcon Symbol="Warning24" Foreground="{DynamicResource SystemFillColorCautionBrush}" Margin="0,0,4,0"/>
-                            <TextBlock Text="Warning" />
-                        </StackPanel>
-                    </CheckBox>
-                    
-                    <!-- ERROR Checkbox -->
-                    <CheckBox IsChecked="{Binding ShowError}" Margin="0,0,24,0">
-                        <StackPanel Orientation="Horizontal">
-                            <ui:SymbolIcon Symbol="ErrorCircle24" Foreground="{DynamicResource SystemFillColorCriticalBrush}" Margin="0,0,4,0"/>
-                            <TextBlock Text="Error" />
-                        </StackPanel>
-                    </CheckBox>
-                </StackPanel>
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="Levels:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0" />
+                                
+                                <!-- INFO Checkbox -->
+                                <CheckBox IsChecked="{Binding ShowInfo}" Margin="0,0,16,0">
+                                    <StackPanel Orientation="Horizontal">
+                                        <ui:SymbolIcon Symbol="Info24" Foreground="{DynamicResource SystemFillColorNeutralBrush}" Margin="0,0,4,0"/>
+                                        <TextBlock Text="Info" />
+                                    </StackPanel>
+                                </CheckBox>
+                                
+                                <!-- WARN Checkbox -->
+                                <CheckBox IsChecked="{Binding ShowWarn}" Margin="0,0,16,0">
+                                    <StackPanel Orientation="Horizontal">
+                                        <ui:SymbolIcon Symbol="Warning24" Foreground="{DynamicResource SystemFillColorCautionBrush}" Margin="0,0,4,0"/>
+                                        <TextBlock Text="Warning" />
+                                    </StackPanel>
+                                </CheckBox>
+                                
+                                <!-- ERROR Checkbox -->
+                                <CheckBox IsChecked="{Binding ShowError}" Margin="0,0,24,0">
+                                    <StackPanel Orientation="Horizontal">
+                                        <ui:SymbolIcon Symbol="ErrorCircle24" Foreground="{DynamicResource SystemFillColorCriticalBrush}" Margin="0,0,4,0"/>
+                                        <TextBlock Text="Error" />
+                                    </StackPanel>
+                                </CheckBox>
+                            </StackPanel>
 
-                <!-- Search -->
-                <ui:TextBox Grid.Column="1" 
-                            PlaceholderText="Search logs..." 
-                            Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}" 
-                            Icon="Search24" 
-                            ClearButtonEnabled="True" 
-                            MaxWidth="400" 
-                            HorizontalAlignment="Right" />
-            </Grid>
-        </Border>
-
-        <!-- DataGrid -->
-        <DataGrid Grid.Row="2" 
-                  ItemsSource="{Binding FilteredLogs}" 
-                  AutoGenerateColumns="False" 
-                  IsReadOnly="True" 
-                  GridLinesVisibility="Horizontal" 
-                  HeadersVisibility="Column"
-                  RowBackground="{DynamicResource ControlFillColorDefaultBrush}"
-                  AlternatingRowBackground="{DynamicResource ControlFillColorSecondaryBrush}">
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="Time" Binding="{Binding Timestamp, StringFormat='HH:mm:ss.fff'}" Width="110" />
-                
-                <DataGridTemplateColumn Header="Level" Width="80">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <Border CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" VerticalAlignment="Center">
-                                <Border.Style>
-                                    <Style TargetType="Border">
-                                        <Setter Property="Background" Value="{DynamicResource SystemFillColorNeutralBackgroundBrush}" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding Level}" Value="WRN">
-                                                <Setter Property="Background" Value="{DynamicResource SystemFillColorCautionBackgroundBrush}" />
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding Level}" Value="ERR">
-                                                <Setter Property="Background" Value="{DynamicResource SystemFillColorCriticalBackgroundBrush}" />
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding Level}" Value="FTL">
-                                                <Setter Property="Background" Value="{DynamicResource SystemFillColorCriticalBackgroundBrush}" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Border.Style>
-                                <TextBlock Text="{Binding Level}" FontSize="11" FontWeight="Bold" />
-                            </Border>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-
-                <DataGridTextColumn Header="Source" Binding="{Binding Source}" Width="200" />
-                <DataGridTextColumn Header="Message" Binding="{Binding Message}" Width="*" />
-                
-            </DataGrid.Columns>
-            
-            <DataGrid.RowDetailsTemplate>
-                <DataTemplate>
-                    <Border Margin="16,8,16,16">
-                        <Border.Style>
-                            <Style TargetType="Border">
-                                <Setter Property="Visibility" Value="Visible" />
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding Exception}" Value="">
-                                        <Setter Property="Visibility" Value="Collapsed" />
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding Exception}" Value="{x:Null}">
-                                        <Setter Property="Visibility" Value="Collapsed" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Border.Style>
-                        <StackPanel>
-                            <TextBlock Text="Exception Details:" FontWeight="SemiBold" Foreground="{DynamicResource SystemFillColorCriticalBrush}" Margin="0,0,0,4" />
-                            <TextBox Text="{Binding Exception}" IsReadOnly="True" TextWrapping="Wrap" Background="Transparent" BorderThickness="0" FontFamily="Consolas" FontSize="12" />
-                        </StackPanel>
+                            <!-- Search -->
+                            <ui:TextBox Grid.Column="1" 
+                                        PlaceholderText="Search logs..." 
+                                        Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}" 
+                                        Icon="{ui:SymbolIcon Search24}" 
+                                        ClearButtonEnabled="True" 
+                                        MaxWidth="400" 
+                                        HorizontalAlignment="Right" />
+                        </Grid>
                     </Border>
-                </DataTemplate>
-            </DataGrid.RowDetailsTemplate>
-        </DataGrid>
+
+                    <!-- DataGrid -->
+                    <DataGrid Grid.Row="1" 
+                              ItemsSource="{Binding FilteredLogs}" 
+                              AutoGenerateColumns="False" 
+                              IsReadOnly="True" 
+                              GridLinesVisibility="Horizontal" 
+                              HeadersVisibility="Column"
+                              RowBackground="{DynamicResource ControlFillColorDefaultBrush}"
+                              AlternatingRowBackground="{DynamicResource ControlFillColorSecondaryBrush}">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Time" Binding="{Binding Timestamp, StringFormat='HH:mm:ss.fff'}" Width="110" />
+                            
+                            <DataGridTemplateColumn Header="Level" Width="80">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Border CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" VerticalAlignment="Center">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="Background" Value="{DynamicResource SystemFillColorNeutralBackgroundBrush}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Level}" Value="WRN">
+                                                            <Setter Property="Background" Value="{DynamicResource SystemFillColorCautionBackgroundBrush}" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Level}" Value="ERR">
+                                                            <Setter Property="Background" Value="{DynamicResource SystemFillColorCriticalBackgroundBrush}" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Level}" Value="FTL">
+                                                            <Setter Property="Background" Value="{DynamicResource SystemFillColorCriticalBackgroundBrush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <TextBlock Text="{Binding Level}" FontSize="11" FontWeight="Bold" />
+                                        </Border>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <DataGridTextColumn Header="Source" Binding="{Binding Source}" Width="200" />
+                            <DataGridTextColumn Header="Message" Binding="{Binding Message}" Width="*" />
+                            
+                        </DataGrid.Columns>
+                        
+                        <DataGrid.RowDetailsTemplate>
+                            <DataTemplate>
+                                <Border Margin="16,8,16,16">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Exception}" Value="">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Exception}" Value="{x:Null}">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <StackPanel>
+                                        <TextBlock Text="Exception Details:" FontWeight="SemiBold" Foreground="{DynamicResource SystemFillColorCriticalBrush}" Margin="0,0,0,4" />
+                                        <TextBox Text="{Binding Exception}" IsReadOnly="True" TextWrapping="Wrap" Background="Transparent" BorderThickness="0" FontFamily="Consolas" FontSize="12" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </DataGrid.RowDetailsTemplate>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+            
+            <!-- Crash Dumps Tab -->
+            <TabItem Header="Crash Dumps">
+                <Grid Margin="0,16,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    
+                    <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="0,0,0,16">
+                        <ui:Button Command="{Binding AnalyzeDumpsCommand}" Appearance="Primary" Margin="0,0,8,0">
+                            <StackPanel Orientation="Horizontal">
+                                <ui:SymbolIcon Symbol="Search24" Margin="0,0,8,0" />
+                                <TextBlock Text="Scan Minidumps" />
+                            </StackPanel>
+                        </ui:Button>
+                        <ui:Button Command="{Binding GenerateBsodReportCommand}" Appearance="Secondary" IsEnabled="{Binding BsodEntries.Count}">
+                            <StackPanel Orientation="Horizontal">
+                                <ui:SymbolIcon Symbol="Document24" Margin="0,0,8,0" />
+                                <TextBlock Text="Generate HTML Report" />
+                            </StackPanel>
+                        </ui:Button>
+                        <ui:ProgressRing IsIndeterminate="True" Visibility="{Binding IsBsodLoading, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="16,0,0,0" Width="20" Height="20" />
+                    </StackPanel>
+                    
+                    <Grid Grid.Row="1">
+                        <TextBlock Text="No crashes detected" 
+                                   Visibility="{Binding HasNoCrashes, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                   HorizontalAlignment="Center" 
+                                   VerticalAlignment="Center" 
+                                   FontSize="16" 
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        
+                        <DataGrid ItemsSource="{Binding BsodEntries}" 
+                                  AutoGenerateColumns="False" 
+                                  IsReadOnly="True" 
+                                  GridLinesVisibility="Horizontal" 
+                                  HeadersVisibility="Column"
+                                  RowBackground="{DynamicResource ControlFillColorDefaultBrush}"
+                                  AlternatingRowBackground="{DynamicResource ControlFillColorSecondaryBrush}">
+                            <DataGrid.Style>
+                                <Style TargetType="DataGrid">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding BsodEntries.Count}" Value="0">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGrid.Style>
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Timestamp" Binding="{Binding Timestamp, StringFormat='yyyy-MM-dd HH:mm:ss'}" Width="140" />
+                                <DataGridTextColumn Header="BugCheck Code" Binding="{Binding BugCheckCode}" Width="120" />
+                                <DataGridTextColumn Header="Name" Binding="{Binding BugCheckName}" Width="200" />
+                                <DataGridTextColumn Header="Likely Cause" Binding="{Binding LikelyCause}" Width="200" />
+                                <DataGridTextColumn Header="Dump File" Binding="{Binding DumpFile}" Width="*" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </Grid>
+            </TabItem>
+            
+            <!-- Application Errors Tab -->
+            <TabItem Header="Application Errors">
+                <Grid Margin="0,16,0,0">
+                    <TextBlock Text="Application errors will appear here (Not implemented)" 
+                               HorizontalAlignment="Center" 
+                               VerticalAlignment="Center" 
+                               FontSize="16" 
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                </Grid>
+            </TabItem>
+        </TabControl>
     </Grid>
 </Page>

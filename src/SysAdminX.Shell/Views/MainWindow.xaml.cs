@@ -44,4 +44,36 @@ public partial class MainWindow : FluentWindow
     /// Gets the navigation view for page registration.
     /// </summary>
     public Wpf.Ui.Controls.NavigationView GetNavigationView() => NavigationView;
+
+    private void Window_StateChanged(object sender, System.EventArgs e)
+    {
+        if (WindowState == WindowState.Minimized)
+        {
+            Hide();
+            TrayIcon.Visibility = Visibility.Visible;
+        }
+    }
+
+    private void TrayIcon_TrayMouseDoubleClick(object sender, RoutedEventArgs e)
+    {
+        RestoreWindow();
+    }
+
+    private void TrayIconOpen_Click(object sender, RoutedEventArgs e)
+    {
+        RestoreWindow();
+    }
+
+    private void TrayIconExit_Click(object sender, RoutedEventArgs e)
+    {
+        Application.Current.Shutdown();
+    }
+
+    private void RestoreWindow()
+    {
+        Show();
+        WindowState = WindowState.Normal;
+        TrayIcon.Visibility = Visibility.Collapsed;
+        Activate();
+    }
 }

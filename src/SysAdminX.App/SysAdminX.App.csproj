@@ -44,6 +44,15 @@
     <ProjectReference Include="..\Modules\SysAdminX.SoftwareManager\SysAdminX.SoftwareManager.csproj" />
 
     <ProjectReference Include="..\Modules\SysAdminX.PortableTools\SysAdminX.PortableTools.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.OneClickCare\SysAdminX.OneClickCare.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.AutoPilot\SysAdminX.AutoPilot.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.SystemRestore\SysAdminX.SystemRestore.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.PrivacyCleaner\SysAdminX.PrivacyCleaner.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.BrowserRepair\SysAdminX.BrowserRepair.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.PerformanceMode\SysAdminX.PerformanceMode.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.StartupManager\SysAdminX.StartupManager.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.LargeFileFinder\SysAdminX.LargeFileFinder.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.RegistryManager\SysAdminX.RegistryManager.csproj" />
   </ItemGroup>
 
 </Project>

@@ -79,12 +79,12 @@ public partial class BatteryManagerViewModel : ObservableObject
             string dest = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "SysAdminX_Reports");
             
             var result = await _batteryService.GenerateBatteryReportAsync(dest, ct);
-            if (result.IsSuccess)
+            if (result.IsSuccess && System.IO.File.Exists(result.Value))
             {
                 // Open the report
                 System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
                 {
-                    FileName = result.Value ?? "",
+                    FileName = result.Value,
                     UseShellExecute = true
                 });
             }
@@ -113,8 +113,8 @@ public partial class BatteryManagerViewModel : ObservableObject
             IsLoading = true;
             string tempFile = Path.Combine(Path.GetTempPath(), "battery_report.html");
             
-            var result = await _processExecutorService.ExecuteAsync("powercfg", $"/batteryreport /output \"{tempFile}\"", requireElevation: true, ct);
-            if (result.IsSuccess)
+            var result = await _processExecutorService.ExecuteAsync("powercfg", $"/batteryreport /output \"{tempFile}\"", requireElevation: false, ct);
+            if (result.IsSuccess && System.IO.File.Exists(tempFile))
             {
                 // Open the report
                 System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo

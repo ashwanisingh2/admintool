@@ -10,6 +10,7 @@
             <ResourceDictionary.MergedDictionaries>
                 <ui:ThemesDictionary Theme="Dark" />
                 <ui:ControlsDictionary />
+                <ResourceDictionary Source="Animations.xaml" />
             </ResourceDictionary.MergedDictionaries>
             
             <converters:InverseBooleanConverter x:Key="InverseBoolConverter" xmlns:converters="clr-namespace:SysAdminX.App.Converters" />

@@ -34,8 +34,7 @@ public partial class SettingsViewModel : ObservableObject
     {
         _logger = logger;
         _settingsService = settingsService;
-        
-        LoadSettingsCommand.Execute(null);
+
     }
 
     [RelayCommand]

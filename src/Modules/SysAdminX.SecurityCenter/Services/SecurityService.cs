@@ -38,7 +38,7 @@ public class SecurityService : ISecurityService
             _logger.LogInformation("Querying Windows Defender status...");
             string script = "Get-MpComputerStatus | Select-Object AMServiceEnabled, RealTimeProtectionEnabled, AntivirusSignatureVersion, AntivirusSignatureLastUpdated, AMProductState | ConvertTo-Json";
             
-            var psResult = await _psService.ExecuteScriptAsync(script);
+            var psResult = await _psService.ExecuteCommandAsync(script);
             
             if (psResult.IsSuccess && !string.IsNullOrWhiteSpace(psResult.Value))
             {
@@ -76,7 +76,7 @@ public class SecurityService : ISecurityService
             _logger.LogInformation("Querying BitLocker status...");
             string script = "Get-BitLockerVolume | Select-Object MountPoint, VolumeStatus, EncryptionMethod, VolumeType, EncryptionPercentage | ConvertTo-Json";
             
-            var psResult = await _psService.ExecuteScriptAsync(script);
+            var psResult = await _psService.ExecuteCommandAsync(script);
             
             if (psResult.IsSuccess && !string.IsNullOrWhiteSpace(psResult.Value))
             {
@@ -155,7 +155,7 @@ public class SecurityService : ISecurityService
             _logger.LogInformation("Querying Firewall profiles...");
             string script = "Get-NetFirewallProfile | Select-Object Name, Enabled, DefaultInboundAction, DefaultOutboundAction | ConvertTo-Json";
             
-            var psResult = await _psService.ExecuteScriptAsync(script);
+            var psResult = await _psService.ExecuteCommandAsync(script);
             
             if (psResult.IsSuccess && !string.IsNullOrWhiteSpace(psResult.Value))
             {
@@ -202,7 +202,7 @@ public class SecurityService : ISecurityService
         {
             _logger.LogInformation("Querying Antivirus products from WMI SecurityCenter2...");
             string script = "Get-CimInstance -Namespace \"root\\SecurityCenter2\" -ClassName AntiVirusProduct -ErrorAction SilentlyContinue | Select-Object displayName, productState | ConvertTo-Json";
-            var psResult = await _psService.ExecuteScriptAsync(script);
+            var psResult = await _psService.ExecuteCommandAsync(script);
             
             if (psResult.IsSuccess && !string.IsNullOrWhiteSpace(psResult.Value))
             {
@@ -264,7 +264,7 @@ $consentPrompt = (Get-ItemProperty -Path $path -Name ConsentPromptBehaviorAdmin 
     ConsentPromptBehaviorAdmin = $consentPrompt
 } | ConvertTo-Json
 ";
-            var psResult = await _psService.ExecuteScriptAsync(script);
+            var psResult = await _psService.ExecuteCommandAsync(script);
             if (psResult.IsSuccess && !string.IsNullOrWhiteSpace(psResult.Value))
             {
                 using var doc = System.Text.Json.JsonDocument.Parse(psResult.Value);
@@ -316,7 +316,7 @@ try {
     '{}'
 }
 ";
-            var psResult = await _psService.ExecuteScriptAsync(script);
+            var psResult = await _psService.ExecuteCommandAsync(script);
             if (psResult.IsSuccess && !string.IsNullOrWhiteSpace(psResult.Value))
             {
                 using var doc = System.Text.Json.JsonDocument.Parse(psResult.Value);
@@ -353,7 +353,7 @@ try {
     [PSCustomObject]@{ IsSupported = $false; IsEnabled = $false } | ConvertTo-Json
 }
 ";
-            var psResult = await _psService.ExecuteScriptAsync(script);
+            var psResult = await _psService.ExecuteCommandAsync(script);
             if (psResult.IsSuccess && !string.IsNullOrWhiteSpace(psResult.Value))
             {
                 using var doc = System.Text.Json.JsonDocument.Parse(psResult.Value);

@@ -24,6 +24,12 @@ public interface IDriverManagerService
     /// <returns>A result containing a list of drivers.</returns>
     Task<Result<List<DriverInfoModel>>> ScanDriversAsync(CancellationToken ct = default);
     
+    // NEW from SolasCarePro
+    Task<Result<string>> DisableDriverWithBackupAsync(string hardwareId, bool safeMode, CancellationToken ct = default);
+    Task<Result> EnableDriverAsync(string hardwareId, CancellationToken ct = default);
+    Task<Result> RollbackDriverAsync(string hardwareId, CancellationToken ct = default);
+    Task<Result> RestoreFromBackupAsync(string backupFilePath, CancellationToken ct = default);
+    
     /// <summary>
     /// Exports all 3rd party drivers to a specific folder.
     /// </summary>

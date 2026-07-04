@@ -16,15 +16,22 @@
     xmlns:setViews="clr-namespace:SysAdminX.Settings.Views;assembly=SysAdminX.Settings"
     xmlns:logViews="clr-namespace:SysAdminX.LogsViewer.Views;assembly=SysAdminX.LogsViewer"
     xmlns:secViews="clr-namespace:SysAdminX.SecurityCenter.Views;assembly=SysAdminX.SecurityCenter"
-    xmlns:adViews="clr-namespace:SysAdminX.ActiveDirectory.Views;assembly=SysAdminX.ActiveDirectory"
-    xmlns:m365Views="clr-namespace:SysAdminX.Microsoft365.Views;assembly=SysAdminX.Microsoft365"
-    xmlns:azViews="clr-namespace:SysAdminX.Azure.Views;assembly=SysAdminX.Azure"
     xmlns:rsViews="clr-namespace:SysAdminX.RemoteSupport.Views;assembly=SysAdminX.RemoteSupport"
     xmlns:batViews="clr-namespace:SysAdminX.BatteryManager.Views;assembly=SysAdminX.BatteryManager"
     xmlns:svcViews="clr-namespace:SysAdminX.ServiceManager.Views;assembly=SysAdminX.ServiceManager"
     xmlns:clnViews="clr-namespace:SysAdminX.SystemCleanup.Views;assembly=SysAdminX.SystemCleanup"
     xmlns:sftViews="clr-namespace:SysAdminX.SoftwareManager.Views;assembly=SysAdminX.SoftwareManager"
     xmlns:prtViews="clr-namespace:SysAdminX.PortableTools.Views;assembly=SysAdminX.PortableTools"
+    xmlns:occViews="clr-namespace:SysAdminX.OneClickCare.Views;assembly=SysAdminX.OneClickCare"
+    xmlns:apViews="clr-namespace:SysAdminX.AutoPilot.Views;assembly=SysAdminX.AutoPilot"
+    xmlns:srViews="clr-namespace:SysAdminX.SystemRestore.Views;assembly=SysAdminX.SystemRestore"
+    xmlns:pcViews="clr-namespace:SysAdminX.PrivacyCleaner.Views;assembly=SysAdminX.PrivacyCleaner"
+    xmlns:brViews="clr-namespace:SysAdminX.BrowserRepair.Views;assembly=SysAdminX.BrowserRepair"
+    xmlns:pmViews="clr-namespace:SysAdminX.PerformanceMode.Views;assembly=SysAdminX.PerformanceMode"
+    xmlns:smViews="clr-namespace:SysAdminX.StartupManager.Views;assembly=SysAdminX.StartupManager"
+    xmlns:lffViews="clr-namespace:SysAdminX.LargeFileFinder.Views;assembly=SysAdminX.LargeFileFinder"
+    xmlns:rmViews="clr-namespace:SysAdminX.RegistryManager.Views;assembly=SysAdminX.RegistryManager"
+    xmlns:tb="http://www.hardcodet.net/taskbar"
     mc:Ignorable="d"
     Title="SysAdminX — IT Admin Toolkit"
     Width="1280"
@@ -32,9 +39,23 @@
     MinWidth="1024"
     MinHeight="600"
     WindowStartupLocation="CenterScreen"
-    ExtendsContentIntoTitleBar="True">
+    ExtendsContentIntoTitleBar="True"
+    StateChanged="Window_StateChanged">
 
     <Grid>
+        <tb:TaskbarIcon
+            x:Name="TrayIcon"
+            IconSource="/Resources/icon.ico"
+            ToolTipText="SysAdminX"
+            Visibility="Collapsed"
+            TrayMouseDoubleClick="TrayIcon_TrayMouseDoubleClick">
+            <tb:TaskbarIcon.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="Open" Click="TrayIconOpen_Click" />
+                    <MenuItem Header="Exit" Click="TrayIconExit_Click" />
+                </ContextMenu>
+            </tb:TaskbarIcon.ContextMenu>
+        </tb:TaskbarIcon>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -139,6 +160,69 @@
                     Content="Portable Tools"
                     Icon="{ui:SymbolIcon Toolbox24}"
                     TargetPageType="{x:Type prtViews:PortableToolsView}" />
+
+                <!-- One Click Care -->
+                <ui:NavigationViewItem
+                    x:Name="NavOneClickCare"
+                    Content="One Click Care"
+                    Icon="{ui:SymbolIcon Heart24}"
+                    TargetPageType="{x:Type occViews:OneClickCareView}" />
+
+                <!-- Auto Pilot -->
+                <ui:NavigationViewItem
+                    x:Name="NavAutoPilot"
+                    Content="Auto Pilot"
+                    Icon="{ui:SymbolIcon Airplane24}"
+                    TargetPageType="{x:Type apViews:AutoPilotView}" />
+
+                <!-- System Restore -->
+                <ui:NavigationViewItem
+                    x:Name="NavSystemRestore"
+                    Content="System Restore"
+                    Icon="{ui:SymbolIcon History24}"
+                    TargetPageType="{x:Type srViews:SystemRestoreView}" />
+
+                <!-- Privacy Cleaner -->
+                <ui:NavigationViewItem
+                    x:Name="NavPrivacyCleaner"
+                    Content="Privacy Cleaner"
+                    Icon="{ui:SymbolIcon ShieldCheckmark24}"
+                    TargetPageType="{x:Type pcViews:PrivacyCleanerView}" />
+
+                <!-- Browser Repair -->
+                <ui:NavigationViewItem
+                    x:Name="NavBrowserRepair"
+                    Content="Browser Repair"
+                    Icon="{ui:SymbolIcon Globe24}"
+                    TargetPageType="{x:Type brViews:BrowserRepairView}" />
+
+                <!-- Performance Mode -->
+                <ui:NavigationViewItem
+                    x:Name="NavPerformanceMode"
+                    Content="Performance Mode"
+                    Icon="{ui:SymbolIcon Flash24}"
+                    TargetPageType="{x:Type pmViews:PerformanceModeView}" />
+
+                <!-- Startup Manager -->
+                <ui:NavigationViewItem
+                    x:Name="NavStartupManager"
+                    Content="Startup Manager"
+                    Icon="{ui:SymbolIcon Timer24}"
+                    TargetPageType="{x:Type smViews:StartupManagerView}" />
+
+                <!-- Large File Finder -->
+                <ui:NavigationViewItem
+                    x:Name="NavLargeFileFinder"
+                    Content="Large File Finder"
+                    Icon="{ui:SymbolIcon DocumentSearch24}"
+                    TargetPageType="{x:Type lffViews:LargeFileFinderView}" />
+
+                <!-- Registry Manager -->
+                <ui:NavigationViewItem
+                    x:Name="NavRegistryManager"
+                    Content="Registry Manager"
+                    Icon="{ui:SymbolIcon DocumentText24}"
+                    TargetPageType="{x:Type rmViews:RegistryManagerView}" />
 
                 <!-- AI Assistant -->
                 <ui:NavigationViewItem

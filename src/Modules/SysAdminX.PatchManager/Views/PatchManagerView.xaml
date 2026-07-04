@@ -109,7 +109,7 @@
                         <Grid Grid.Row="0" Margin="0,0,0,16">
                             <ui:TextBox PlaceholderText="Search by KB number (e.g. KB503)..."
                                         Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}"
-                                        Icon="Search24" Width="300" HorizontalAlignment="Left" />
+                                        Icon="{ui:SymbolIcon Search24}" Width="300" HorizontalAlignment="Left" />
                         </Grid>
                         
                         <DataGrid Grid.Row="1"

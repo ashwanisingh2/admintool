@@ -23,5 +23,6 @@ public partial class SecurityCenterView : Page
         DataContext = ViewModel;
 
         InitializeComponent();
+        Loaded += (s, e) => ViewModel.LoadDataCommand.Execute(null);
     }
 }

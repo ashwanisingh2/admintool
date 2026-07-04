@@ -18,4 +18,17 @@
     <ProjectReference Include="..\SysAdminX.Core\SysAdminX.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Scripts\analyze_bsod.ps1" />
+    <EmbeddedResource Include="Scripts\repair_driver.ps1" />
+    <EmbeddedResource Include="Scripts\run_trim.ps1" />
+    <EmbeddedResource Include="Scripts\component_cleanup.ps1" />
+    <EmbeddedResource Include="Scripts\ram_diagnostic.ps1" />
+    <EmbeddedResource Include="Scripts\system_restore.ps1" />
+    <EmbeddedResource Include="Scripts\iobit_one_click_care.ps1" />
+    <EmbeddedResource Include="Scripts\privacy_scan.ps1" />
+    <EmbeddedResource Include="Scripts\privacy_clean.ps1" />
+    <EmbeddedResource Include="Scripts\browser_reset.ps1" />
+  </ItemGroup>
+
 </Project>

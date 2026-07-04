@@ -156,7 +156,7 @@ public class PatchManagerService : IPatchManagerService
             string psScript = @"
 $updateSession = New-Object -ComObject Microsoft.Update.Session
 $updateSearcher = $updateSession.CreateUpdateSearcher()
-$searchResult = $updateSearcher.Search('IsInstalled=0 and Type=''Software'' and IsHidden=0')
+$searchResult = $updateSearcher.Search(""IsInstalled=0 and Type='Software' and IsHidden=0"")
 $updates = $searchResult.Updates
 $result = @()
 for ($i = 0; $i -lt $updates.Count; $i++) {
@@ -221,7 +221,7 @@ for ($i = 0; $i -lt $updates.Count; $i++) {
 $updateSession = New-Object -ComObject Microsoft.Update.Session
 $updateSearcher = $updateSession.CreateUpdateSearcher()
 Write-Host 'Searching for missing updates...' -ForegroundColor Cyan
-$searchResult = $updateSearcher.Search('IsInstalled=0 and Type=''Software'' and IsHidden=0')
+$searchResult = $updateSearcher.Search(""IsInstalled=0 and Type='Software' and IsHidden=0"")
 $updates = $searchResult.Updates
 
 if ($updates.Count -eq 0) {{
@@ -248,8 +248,7 @@ $json = @{{
     ResultCode = $installResult.ResultCode
 }}
 $json | ConvertTo-Json -Compress | Out-File -FilePath '{resultFile}' -Encoding UTF8
-Write-Host 'Press any key to continue...'
-$Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown') | Out-Null
+
 ";
             string tempFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "InstallUpdates.ps1");
             await System.IO.File.WriteAllTextAsync(tempFile, psScript, ct);

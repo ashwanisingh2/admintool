@@ -1,0 +1,74 @@
+<Page
+    x:Class="SysAdminX.PerformanceMode.Views.PerformanceModeView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    xmlns:viewmodels="clr-namespace:SysAdminX.PerformanceMode.ViewModels"
+    mc:Ignorable="d"
+    d:DesignHeight="600" d:DesignWidth="800"
+    d:DataContext="{d:DesignInstance Type=viewmodels:PerformanceModeViewModel, IsDesignTimeCreatable=False}"
+    Title="Performance Mode">
+
+    <Page.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+    </Page.Resources>
+
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="0,0,0,24">
+            <TextBlock Text="Performance Mode" FontSize="28" FontWeight="SemiBold" Margin="0,0,0,8" />
+            <TextBlock Text="Select a system performance profile to optimize Windows for your current workload." FontSize="14" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+        </StackPanel>
+
+        <ItemsControl Grid.Row="1" ItemsSource="{Binding Profiles}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <UniformGrid Columns="3" />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <ui:Card Margin="8" Padding="24" VerticalAlignment="Stretch">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <Grid Grid.Row="0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <ui:SymbolIcon Symbol="{Binding IconName}" FontSize="48" HorizontalAlignment="Left" />
+                                <ui:SymbolIcon Grid.Column="1" Symbol="Checkmark24" 
+                                               Foreground="{DynamicResource SystemFillColorSuccessBrush}"
+                                               Visibility="{Binding IsActive, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                               HorizontalAlignment="Right" VerticalAlignment="Top" />
+                            </Grid>
+                            
+                            <StackPanel Grid.Row="1" Margin="0,16,0,24">
+                                <TextBlock Text="{Binding Name}" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,8" />
+                                <TextBlock Text="{Binding Description}" TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            </StackPanel>
+
+                            <ui:Button Content="Apply" 
+                                       Command="{Binding DataContext.ApplyProfileCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" 
+                                       CommandParameter="{Binding Id}"
+                                       Appearance="Primary"
+                                       HorizontalAlignment="Stretch" 
+                                       Grid.Row="2" />
+                        </Grid>
+                    </ui:Card>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </Grid>
+</Page>

@@ -49,11 +49,17 @@ public class LogsService : ILogsService
             if (logFiles.Count == 0)
                 return entries;
 
-            // Open the most recent log file. Use FileShare.ReadWrite because Serilog might be locking it
-            using var fs = new FileStream(logFiles.First(), FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            using var reader = new StreamReader(fs);
+            var logFilesToRead = logFiles.Take(5).Reverse().ToList();
+            var linesList = new List<string>();
             
-            var allLines = (await reader.ReadToEndAsync()).Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+            foreach (var logFile in logFilesToRead)
+            {
+                using var fs = new FileStream(logFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                using var reader = new StreamReader(fs);
+                linesList.AddRange((await reader.ReadToEndAsync()).Split(new[] { Environment.NewLine }, StringSplitOptions.None));
+            }
+            
+            var allLines = linesList.ToArray();
             
             // Start from the end, read up to maxLines
             int startIdx = Math.Max(0, allLines.Length - maxLines);

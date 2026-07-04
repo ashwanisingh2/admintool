@@ -15,6 +15,7 @@ using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
+using SysAdminX.Core.Interfaces;
 using SysAdminX.Core.Models;
 using SysAdminX.LogsViewer.Services;
 
@@ -27,8 +28,18 @@ public partial class LogsViewerViewModel : ObservableObject
 {
     private readonly ILogger<LogsViewerViewModel> _logger;
     private readonly ILogsService _logsService;
+    private readonly IBsodAnalyzerService _bsodAnalyzerService;
 
     private ObservableCollection<LogEntryModel> _allLogs = new();
+
+    [ObservableProperty]
+    private ObservableCollection<BsodEntryModel> _bsodEntries = new();
+
+    [ObservableProperty]
+    private bool _isBsodLoading;
+
+    [ObservableProperty]
+    private bool _hasNoCrashes;
 
     [ObservableProperty]
     private ObservableCollection<LogEntryModel> _filteredLogs = new();
@@ -50,10 +61,11 @@ public partial class LogsViewerViewModel : ObservableObject
 
     private readonly DispatcherTimer _autoRefreshTimer;
 
-    public LogsViewerViewModel(ILogger<LogsViewerViewModel> logger, ILogsService logsService)
+    public LogsViewerViewModel(ILogger<LogsViewerViewModel> logger, ILogsService logsService, IBsodAnalyzerService bsodAnalyzerService)
     {
         _logger = logger;
         _logsService = logsService;
+        _bsodAnalyzerService = bsodAnalyzerService;
         
         _autoRefreshTimer = new DispatcherTimer
         {
@@ -61,7 +73,6 @@ public partial class LogsViewerViewModel : ObservableObject
         };
         _autoRefreshTimer.Tick += async (s, e) => await AutoRefreshTickAsync();
 
-        RefreshLogsCommand.Execute(null);
     }
 
     partial void OnIsAutoRefreshEnabledChanged(bool value)
@@ -172,6 +183,44 @@ public partial class LogsViewerViewModel : ObservableObject
             {
                 _logger.LogError(ex, "Failed to export logs.");
             }
+        }
+    }
+
+    [RelayCommand]
+    public async Task AnalyzeDumpsAsync(CancellationToken ct)
+    {
+        IsBsodLoading = true;
+        HasNoCrashes = false;
+        BsodEntries.Clear();
+
+        try
+        {
+            var result = await _bsodAnalyzerService.AnalyzeDumpsAsync(ct);
+            if (result.IsSuccess && result.Data != null)
+            {
+                foreach (var entry in result.Data)
+                {
+                    BsodEntries.Add(entry);
+                }
+            }
+
+            if (BsodEntries.Count == 0)
+            {
+                HasNoCrashes = true;
+            }
+        }
+        finally
+        {
+            IsBsodLoading = false;
+        }
+    }
+
+    [RelayCommand]
+    public async Task GenerateBsodReportAsync(CancellationToken ct)
+    {
+        if (BsodEntries.Count > 0)
+        {
+            await _bsodAnalyzerService.GenerateHtmlReportAsync(BsodEntries, ct);
         }
     }
 }

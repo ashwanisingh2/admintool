@@ -37,6 +37,7 @@ public class SystemCleanupService : ISystemCleanupService
                         Id = "temp",
                         Name = "Temporary Files",
                         Description = "Files in the current user's temporary folder.",
+                        Path = Path.GetTempPath(),
                         SizeBytes = GetDirectorySize(Path.GetTempPath()),
                         IsSelected = true
                     },
@@ -45,6 +46,7 @@ public class SystemCleanupService : ISystemCleanupService
                         Id = "windows_temp",
                         Name = "Windows Temporary Files",
                         Description = "Files in the Windows Temp folder.",
+                        Path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Temp"),
                         SizeBytes = GetDirectorySize(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Temp")),
                         IsSelected = true
                     },
@@ -53,6 +55,7 @@ public class SystemCleanupService : ISystemCleanupService
                         Id = "windows_update",
                         Name = "Windows Update Cache",
                         Description = "Temporary files created by Windows Update.",
+                        Path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "SoftwareDistribution", "Download"),
                         SizeBytes = GetDirectorySize(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "SoftwareDistribution", "Download")),
                         IsSelected = false
                     },
@@ -61,6 +64,7 @@ public class SystemCleanupService : ISystemCleanupService
                         Id = "prefetch",
                         Name = "Prefetch Cache",
                         Description = "Files used to speed up application launching.",
+                        Path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Prefetch"),
                         SizeBytes = GetDirectorySize(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Prefetch")),
                         IsSelected = false
                     },
@@ -69,6 +73,7 @@ public class SystemCleanupService : ISystemCleanupService
                         Id = "dns_cache",
                         Name = "DNS Cache",
                         Description = "Flushes the DNS resolver cache.",
+                        Path = string.Empty,
                         SizeBytes = 0,
                         IsSelected = false
                     },
@@ -77,6 +82,7 @@ public class SystemCleanupService : ISystemCleanupService
                         Id = "chrome_cache",
                         Name = "Google Chrome Cache",
                         Description = "Temporary internet files for Chrome.",
+                        Path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Google", "Chrome", "User Data", "Default", "Cache", "Cache_Data"),
                         SizeBytes = GetDirectorySize(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Google", "Chrome", "User Data", "Default", "Cache", "Cache_Data")),
                         IsSelected = false
                     },
@@ -85,6 +91,7 @@ public class SystemCleanupService : ISystemCleanupService
                         Id = "edge_cache",
                         Name = "Microsoft Edge Cache",
                         Description = "Temporary internet files for Edge.",
+                        Path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Microsoft", "Edge", "User Data", "Default", "Cache", "Cache_Data"),
                         SizeBytes = GetDirectorySize(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Microsoft", "Edge", "User Data", "Default", "Cache", "Cache_Data")),
                         IsSelected = false
                     }
@@ -101,7 +108,34 @@ public class SystemCleanupService : ISystemCleanupService
 
     public async Task<Result<long>> CalculateSpaceAsync(IEnumerable<string> itemIds)
     {
-        return await Task.Run(() => Result<long>.Success(0));
+        return await Task.Run(() =>
+        {
+            try
+            {
+                long totalSpace = 0;
+                foreach (var id in itemIds)
+                {
+                    if (id == "temp")
+                        totalSpace += GetDirectorySize(Path.GetTempPath());
+                    else if (id == "windows_temp")
+                        totalSpace += GetDirectorySize(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Temp"));
+                    else if (id == "windows_update")
+                        totalSpace += GetDirectorySize(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "SoftwareDistribution", "Download"));
+                    else if (id == "prefetch")
+                        totalSpace += GetDirectorySize(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Prefetch"));
+                    else if (id == "chrome_cache")
+                        totalSpace += GetDirectorySize(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Google", "Chrome", "User Data", "Default", "Cache", "Cache_Data"));
+                    else if (id == "edge_cache")
+                        totalSpace += GetDirectorySize(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Microsoft", "Edge", "User Data", "Default", "Cache", "Cache_Data"));
+                }
+                return Result<long>.Success(totalSpace);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to calculate space.");
+                return Result<long>.Failure("Failed to calculate space: " + ex.Message);
+            }
+        });
     }
 
     public async Task<Result<bool>> PerformCleanupAsync(IEnumerable<string> itemIds)
@@ -163,6 +197,92 @@ public class SystemCleanupService : ISystemCleanupService
                 return Result<bool>.Failure("Cleanup failed: " + ex.Message);
             }
         });
+    }
+
+    public async Task<Result<CleanupResultModel>> CleanAsync(IEnumerable<CleanupItemModel> items, CancellationToken ct = default)
+    {
+        return await Task.Run(() =>
+        {
+            var backupDir = Path.Combine(Path.GetTempPath(), $"sysadminx_junk_undo_{Guid.NewGuid():N}");
+            Directory.CreateDirectory(backupDir);
+
+            long totalBytes = 0;
+            var movedFiles = new List<(string OriginalPath, string BackupPath)>();
+
+            foreach (var item in items)
+            {
+                if (!item.IsSelected || string.IsNullOrEmpty(item.Path) || !Directory.Exists(item.Path))
+                    continue;
+
+                foreach (var file in Directory.EnumerateFiles(item.Path, "*", SearchOption.AllDirectories))
+                {
+                    try
+                    {
+                        var relativePath = Path.GetRelativePath(item.Path, file);
+                        var backupPath = Path.Combine(backupDir, relativePath);
+                        Directory.CreateDirectory(Path.GetDirectoryName(backupPath)!);
+                        File.Move(file, backupPath);
+                        totalBytes += new FileInfo(backupPath).Length;
+                        movedFiles.Add((file, backupPath));
+                    }
+                    catch (IOException) { /* skip locked files */ }
+                    catch (UnauthorizedAccessException) { /* skip */ }
+                }
+            }
+
+            return Result<CleanupResultModel>.Success(new CleanupResultModel
+            {
+                TotalBytesFreed = totalBytes,
+                BackupDirectory = backupDir,
+                MovedFiles = movedFiles,
+                UndoExpiresAt = DateTime.UtcNow.AddSeconds(30)
+            });
+        }, ct);
+    }
+
+    public async Task<Result> UndoAsync(string backupDirectory, List<(string OriginalPath, string BackupPath)> movedFiles, CancellationToken ct = default)
+    {
+        return await Task.Run(() =>
+        {
+            try
+            {
+                foreach (var (original, backup) in movedFiles)
+                {
+                    if (File.Exists(backup))
+                    {
+                        Directory.CreateDirectory(Path.GetDirectoryName(original)!);
+                        File.Move(backup, original);
+                    }
+                }
+                if (Directory.Exists(backupDirectory))
+                    Directory.Delete(backupDirectory, recursive: true);
+                
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to undo cleanup.");
+                return Result.Failure("Failed to undo: " + ex.Message);
+            }
+        }, ct);
+    }
+
+    public async Task<Result> FinalizeAsync(string backupDirectory, CancellationToken ct = default)
+    {
+        return await Task.Run(() =>
+        {
+            try
+            {
+                if (Directory.Exists(backupDirectory))
+                    Directory.Delete(backupDirectory, recursive: true);
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to finalize cleanup.");
+                return Result.Failure("Failed to finalize: " + ex.Message);
+            }
+        }, ct);
     }
 
     private long GetDirectorySize(string path)

@@ -23,5 +23,6 @@ public partial class ReportsView : Page
         DataContext = ViewModel;
 
         InitializeComponent();
+        Loaded += (s, e) => ViewModel.LoadHistoryCommand.Execute(null);
     }
 }

@@ -30,7 +30,7 @@ public class NavigationViewPageProvider : IPageService
     /// <inheritdoc />
     public T? GetPage<T>() where T : class
     {
-        return (T?)_serviceProvider.GetService(typeof(T));
+        return _serviceProvider.GetService(typeof(T)) as T;
     }
 
     /// <inheritdoc />

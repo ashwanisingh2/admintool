@@ -11,6 +11,7 @@
   <ItemGroup>
     <PackageReference Include="WPF-UI" Version="3.0.5" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" />
+    <PackageReference Include="H.NotifyIcon.Wpf" Version="2.1.4" />
   </ItemGroup>
 
   <ItemGroup>
@@ -26,15 +27,21 @@
     <ProjectReference Include="..\Modules\SysAdminX.Settings\SysAdminX.Settings.csproj" />
     <ProjectReference Include="..\Modules\SysAdminX.LogsViewer\SysAdminX.LogsViewer.csproj" />
     <ProjectReference Include="..\Modules\SysAdminX.SecurityCenter\SysAdminX.SecurityCenter.csproj" />
-    <ProjectReference Include="..\Modules\SysAdminX.ActiveDirectory\SysAdminX.ActiveDirectory.csproj" />
-    <ProjectReference Include="..\Modules\SysAdminX.Microsoft365\SysAdminX.Microsoft365.csproj" />
-    <ProjectReference Include="..\Modules\SysAdminX.Azure\SysAdminX.Azure.csproj" />
     <ProjectReference Include="..\Modules\SysAdminX.RemoteSupport\SysAdminX.RemoteSupport.csproj" />
     <ProjectReference Include="..\Modules\SysAdminX.BatteryManager\SysAdminX.BatteryManager.csproj" />
     <ProjectReference Include="..\Modules\SysAdminX.ServiceManager\SysAdminX.ServiceManager.csproj" />
     <ProjectReference Include="..\Modules\SysAdminX.SystemCleanup\SysAdminX.SystemCleanup.csproj" />
     <ProjectReference Include="..\Modules\SysAdminX.SoftwareManager\SysAdminX.SoftwareManager.csproj" />
     <ProjectReference Include="..\Modules\SysAdminX.PortableTools\SysAdminX.PortableTools.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.OneClickCare\SysAdminX.OneClickCare.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.AutoPilot\SysAdminX.AutoPilot.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.SystemRestore\SysAdminX.SystemRestore.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.PrivacyCleaner\SysAdminX.PrivacyCleaner.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.BrowserRepair\SysAdminX.BrowserRepair.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.PerformanceMode\SysAdminX.PerformanceMode.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.StartupManager\SysAdminX.StartupManager.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.LargeFileFinder\SysAdminX.LargeFileFinder.csproj" />
+    <ProjectReference Include="..\Modules\SysAdminX.RegistryManager\SysAdminX.RegistryManager.csproj" />
   </ItemGroup>
 
 </Project>

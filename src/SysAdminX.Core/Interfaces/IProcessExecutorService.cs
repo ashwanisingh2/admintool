@@ -25,4 +25,15 @@ public interface IProcessExecutorService
     /// <param name="ct">Cancellation token.</param>
     /// <returns>A result containing the standard output text.</returns>
     Task<Result<string>> ExecuteAsync(string fileName, string arguments, bool requireElevation = false, CancellationToken ct = default);
+
+    /// <summary>
+    /// Executes a command line process and streams standard output progressively.
+    /// </summary>
+    /// <param name="fileName">The executable to run (e.g., "ping.exe").</param>
+    /// <param name="arguments">The arguments to pass.</param>
+    /// <param name="requireElevation">Whether to request admin privileges.</param>
+    /// <param name="outputProgress">Progress handler for output lines.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>A result containing completion status.</returns>
+    Task<Result<bool>> ExecuteStreamingAsync(string fileName, string arguments, bool requireElevation, System.IProgress<string> outputProgress, CancellationToken ct = default);
 }

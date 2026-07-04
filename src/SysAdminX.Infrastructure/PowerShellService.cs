@@ -112,7 +112,7 @@ public class PowerShellService : IPowerShellService
     }
 
     /// <inheritdoc />
-    public async Task<Result<string>> ExecuteScriptAsync(string scriptPath, Dictionary<string, object>? parameters = null, CancellationToken ct = default)
+    public async Task<Result<string>> ExecuteScriptFileAsync(string scriptPath, Dictionary<string, object>? parameters = null, CancellationToken ct = default)
     {
         try
         {
@@ -143,6 +143,32 @@ public class PowerShellService : IPowerShellService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to execute PowerShell script: {Script}", scriptPath);
+            return Result<string>.Failure(ex.Message, ex);
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<Result<string>> ExecuteScriptContentAsync(string scriptContent, Dictionary<string, object>? parameters = null, CancellationToken ct = default)
+    {
+        try
+        {
+            ct.ThrowIfCancellationRequested();
+
+            var tempFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"script_{Guid.NewGuid():N}.ps1");
+            await System.IO.File.WriteAllTextAsync(tempFile, scriptContent, ct);
+
+            var result = await ExecuteScriptFileAsync(tempFile, parameters, ct);
+            
+            try { System.IO.File.Delete(tempFile); } catch { /* Ignore */ }
+            return result;
+        }
+        catch (OperationCanceledException)
+        {
+            return Result<string>.Cancelled();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to execute PowerShell script content");
             return Result<string>.Failure(ex.Message, ex);
         }
     }
@@ -196,5 +222,100 @@ public class PowerShellService : IPowerShellService
             return command[..200] + "... (truncated)";
         }
         return command;
+    }
+
+    /// <inheritdoc />
+    public async Task<string> ExtractEmbeddedScriptAsync(string resourceName, CancellationToken ct = default)
+    {
+        var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+        using var stream = assembly.GetManifestResourceStream(resourceName);
+        if (stream == null)
+        {
+            throw new System.IO.FileNotFoundException($"Could not find embedded script: {resourceName}");
+        }
+        using var reader = new System.IO.StreamReader(stream);
+        return await reader.ReadToEndAsync(ct);
+    }
+
+    /// <inheritdoc />
+    public async Task<Result<bool>> ExecuteStreamingAsync(string scriptPath, Dictionary<string, object>? parameters, Action<string> onOutput, CancellationToken ct = default)
+    {
+        try
+        {
+            ct.ThrowIfCancellationRequested();
+
+            if (!System.IO.File.Exists(scriptPath))
+            {
+                return Result<bool>.Failure($"Script file not found: {scriptPath}");
+            }
+
+            var paramString = new StringBuilder();
+            if (parameters != null)
+            {
+                foreach (var param in parameters)
+                {
+                    paramString.Append($" -{param.Key} '{EscapeCommand(param.Value?.ToString() ?? string.Empty)}'");
+                }
+            }
+            
+            var command = $"& '{scriptPath}'{paramString}";
+            _logger.LogInformation("Executing streaming PowerShell command: {Command}", SanitizeForLog(command));
+
+            var psi = new ProcessStartInfo
+            {
+                FileName = "powershell.exe",
+                Arguments = $"-NoProfile -NonInteractive -ExecutionPolicy Bypass -Command \"{EscapeCommand(command)}\"",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                StandardOutputEncoding = Encoding.UTF8,
+                StandardErrorEncoding = Encoding.UTF8
+            };
+
+            using var process = new Process { StartInfo = psi };
+            
+            process.OutputDataReceived += (_, e) =>
+            {
+                if (e.Data != null) onOutput(e.Data);
+            };
+            process.ErrorDataReceived += (_, e) =>
+            {
+                if (e.Data != null) _logger.LogWarning("PowerShell stream error: {Error}", e.Data);
+            };
+
+            process.Start();
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
+
+            using var registration = ct.Register(() =>
+            {
+                try { process.Kill(entireProcessTree: true); }
+                catch { /* Process may have already exited */ }
+            });
+
+            await process.WaitForExitAsync(ct);
+
+            if (ct.IsCancellationRequested)
+            {
+                return Result<bool>.Cancelled();
+            }
+
+            if (process.ExitCode != 0)
+            {
+                return Result<bool>.Failure($"PowerShell error (exit code {process.ExitCode})");
+            }
+
+            return Result<bool>.Success(true);
+        }
+        catch (OperationCanceledException)
+        {
+            return Result<bool>.Cancelled();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to execute streaming PowerShell script");
+            return Result<bool>.Failure(ex.Message, ex);
+        }
     }
 }

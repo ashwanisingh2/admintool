@@ -124,7 +124,7 @@
                         <ui:TextBox Grid.Row="0"
                                     PlaceholderText="Search connections by process or IP..."
                                     Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}"
-                                    Icon="Search24"
+                                    Icon="{ui:SymbolIcon Search24}"
                                     Width="300"
                                     HorizontalAlignment="Left"
                                     Margin="0,0,0,16" />

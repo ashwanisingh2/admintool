@@ -24,15 +24,18 @@ public class DeviceDetailsService : IDeviceDetailsService
     private readonly ILogger<DeviceDetailsService> _logger;
     private readonly IWmiService _wmiService;
     private readonly IRegistryService _registryService;
+    private readonly IPowerShellService _powerShellService;
 
     public DeviceDetailsService(
         ILogger<DeviceDetailsService> logger,
         IWmiService wmiService,
-        IRegistryService registryService)
+        IRegistryService registryService,
+        IPowerShellService powerShellService)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _wmiService = wmiService ?? throw new ArgumentNullException(nameof(wmiService));
         _registryService = registryService ?? throw new ArgumentNullException(nameof(registryService));
+        _powerShellService = powerShellService ?? throw new ArgumentNullException(nameof(powerShellService));
     }
 
     public async Task<Result<DeviceDetailsModel>> GetDeviceDetailsAsync(CancellationToken ct = default)
@@ -301,6 +304,38 @@ public class DeviceDetailsService : IDeviceDetailsService
             }
         }
 
+        var driveTypes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var mappingCommand = @"
+Get-Partition | Where-Object { $_.DriveLetter } | ForEach-Object {
+    $letter = $_.DriveLetter
+    $diskNum = $_.DiskNumber
+    $mediaType = 'Unknown'
+    try {
+        $disk = Get-Disk -Number $diskNum -ErrorAction Stop
+        $phys = Get-PhysicalDisk | Where-Object { $_.SerialNumber -eq $disk.SerialNumber }
+        if ($phys) { $mediaType = $phys.MediaType }
+        elseif ($diskNum -eq 0) { $phys = Get-PhysicalDisk -DeviceId 0; if ($phys) { $mediaType = $phys.MediaType } }
+    } catch { }
+    [PSCustomObject]@{
+        DriveLetter = [string]$letter + ':'
+        MediaType = [string]$mediaType
+    }
+}
+";
+        var mappingResult = await _powerShellService.ExecuteCommandWithObjectsAsync(mappingCommand, ct);
+        if (mappingResult.IsSuccess && mappingResult.Value != null)
+        {
+            foreach (var item in mappingResult.Value)
+            {
+                var letter = item["DriveLetter"]?.ToString();
+                var mediaType = item["MediaType"]?.ToString();
+                if (!string.IsNullOrEmpty(letter) && !string.IsNullOrEmpty(mediaType))
+                {
+                    driveTypes[letter] = mediaType;
+                }
+            }
+        }
+
         var wmiResult = await _wmiService.QueryAsync("SELECT DeviceID, VolumeName, FileSystem, Size, FreeSpace, DriveType FROM Win32_LogicalDisk WHERE DriveType=3", ct);
         if (wmiResult.IsSuccess && wmiResult.Value != null)
         {
@@ -310,16 +345,24 @@ public class DeviceDetailsService : IDeviceDetailsService
                 long free = long.TryParse(obj["FreeSpace"]?.ToString(), out var f) ? f : 0;
                 long used = size - free;
                 double pct = size > 0 ? (used * 100.0 / size) : 0;
+
+                string driveLetter = obj["DeviceID"]?.ToString() ?? "";
+                string type = "Local Disk";
+                if (driveTypes.TryGetValue(driveLetter, out string mt) && !string.IsNullOrEmpty(mt) && mt != "Unknown" && mt != "Unspecified")
+                {
+                    type = mt;
+                }
+
                 drives.Add(new StorageDriveModel
                 {
-                    DriveLetter = obj["DeviceID"]?.ToString() ?? "",
+                    DriveLetter = driveLetter,
                     Label = obj["VolumeName"]?.ToString() ?? "",
                     FileSystem = obj["FileSystem"]?.ToString() ?? "",
                     TotalSize = $"{size / (1024.0 * 1024 * 1024):F1} GB",
                     FreeSpace = $"{free / (1024.0 * 1024 * 1024):F1} GB",
                     UsedSpace = $"{used / (1024.0 * 1024 * 1024):F1} GB",
                     UsagePercent = pct,
-                    DriveType = "Local Disk",
+                    DriveType = type,
                     HealthStatus = healthStatus
                 });
             }
