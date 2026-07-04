@@ -399,7 +399,7 @@
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <ui:SymbolIcon Symbol="Drive24" FontSize="20" Margin="0,0,12,16" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                                <ui:SymbolIcon Symbol="Storage24" FontSize="20" Margin="0,0,12,16" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
                                 <TextBlock Grid.Column="1" Text="STORAGE" Style="{StaticResource SectionHeader}" />
                             </Grid>
                             
@@ -451,7 +451,7 @@
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <ui:SymbolIcon Symbol="Key24" FontSize="20" Margin="0,0,12,16" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                                <ui:SymbolIcon Symbol="Password24" FontSize="20" Margin="0,0,12,16" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
                                 <TextBlock Grid.Column="1" Text="ACTIVATION STATUS" Style="{StaticResource SectionHeader}" />
                             </Grid>
                             
