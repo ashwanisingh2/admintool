@@ -11,6 +11,8 @@ using System.IO;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Linq;
+using System.Management;
 using Microsoft.Extensions.Logging;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
@@ -49,7 +51,10 @@ public class ReportService : IReportService
             foreach (var file in files)
             {
                 var info = new FileInfo(file);
-                var type = info.Extension.ToLower() == ".json" ? ReportType.JSON : ReportType.PDF;
+                ReportType type = ReportType.PDF;
+                string ext = info.Extension.ToLower();
+                if (ext == ".json") type = ReportType.JSON;
+                else if (ext == ".html" || ext == ".htm") type = ReportType.HTML;
                 
                 reports.Add(new ReportModel
                 {
@@ -177,6 +182,242 @@ public class ReportService : IReportService
         catch (Exception ex)
         {
             _logger.LogError(ex, "JSON Generation failed");
+            return Result<ReportModel>.Failure(ex.Message, ex);
+        }
+    }
+
+    public async Task<Result<ReportModel>> GenerateHtmlAuditReportAsync(string filename, CancellationToken ct = default)
+    {
+        try
+        {
+            _logger.LogInformation("Generating HTML Audit Report...");
+            string path = Path.Combine(_reportsDir, filename);
+
+            string computerName = Environment.MachineName;
+            string osVersion = Environment.OSVersion.VersionString;
+            
+            string cpu = "Unknown";
+            string ram = "Unknown";
+            string antivirus = "Unknown";
+            
+            try
+            {
+#pragma warning disable CA1416 // Validate platform compatibility
+                using var cpuSearcher = new ManagementObjectSearcher("select Name from Win32_Processor");
+                foreach (var obj in cpuSearcher.Get())
+                {
+                    cpu = obj["Name"]?.ToString() ?? "Unknown";
+                    break;
+                }
+
+                using var ramSearcher = new ManagementObjectSearcher("select TotalPhysicalMemory from Win32_ComputerSystem");
+                foreach (var obj in ramSearcher.Get())
+                {
+                    if (ulong.TryParse(obj["TotalPhysicalMemory"]?.ToString(), out ulong bytes))
+                    {
+                        ram = $"{bytes / (1024 * 1024 * 1024.0):F2} GB";
+                    }
+                    break;
+                }
+                
+                using var avSearcher = new ManagementObjectSearcher(@"root\SecurityCenter2", "SELECT * FROM AntiVirusProduct");
+                var avList = new List<string>();
+                foreach (var obj in avSearcher.Get())
+                {
+                    avList.Add(obj["displayName"]?.ToString() ?? "Unknown");
+                }
+                antivirus = avList.Any() ? string.Join(", ", avList) : "Not Found / Windows Defender";
+#pragma warning restore CA1416
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to retrieve some WMI info.");
+            }
+
+            var ipAddress = System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
+                .Where(n => n.OperationalStatus == System.Net.NetworkInformation.OperationalStatus.Up)
+                .SelectMany(n => n.GetIPProperties().UnicastAddresses)
+                .Where(a => a.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                .Select(a => a.Address.ToString())
+                .FirstOrDefault() ?? "Unknown";
+
+            var drives = DriveInfo.GetDrives().Where(d => d.IsReady).Select(d => 
+                $"<li>{d.Name} - {d.TotalFreeSpace / (1024 * 1024 * 1024.0):F2} GB Free / {d.TotalSize / (1024 * 1024 * 1024.0):F2} GB Total</li>"
+            );
+            string drivesHtml = string.Join("\n", drives);
+
+            string html = $@"<!DOCTYPE html>
+<html lang=""en"">
+<head>
+    <meta charset=""UTF-8"">
+    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+    <title>System Audit Report - {computerName}</title>
+    <style>
+        :root {{
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #3b82f6;
+            --border: #334155;
+        }}
+        body {{
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 40px 20px;
+        }}
+        .container {{
+            max-width: 800px;
+            margin: 0 auto;
+        }}
+        .header {{
+            text-align: center;
+            margin-bottom: 40px;
+            animation: fadeIn 1s ease-out;
+        }}
+        .header h1 {{
+            margin: 0;
+            font-size: 2.5rem;
+            color: var(--text-main);
+            background: -webkit-linear-gradient(45deg, #60a5fa, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }}
+        .header p {{
+            color: var(--text-muted);
+            margin-top: 10px;
+        }}
+        .card {{
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }}
+        .card:hover {{
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }}
+        .card h2 {{
+            margin-top: 0;
+            color: var(--accent);
+            font-size: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+        }}
+        .grid-list {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }}
+        .data-item {{
+            display: flex;
+            flex-direction: column;
+        }}
+        .data-label {{
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }}
+        .data-value {{
+            font-size: 1.125rem;
+            font-weight: 500;
+        }}
+        ul.drives-list {{
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }}
+        ul.drives-list li {{
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+        }}
+        ul.drives-list li:last-child {{
+            border-bottom: none;
+        }}
+        @keyframes fadeIn {{
+            from {{ opacity: 0; transform: translateY(-10px); }}
+            to {{ opacity: 1; transform: translateY(0); }}
+        }}
+    </style>
+</head>
+<body>
+    <div class=""container"">
+        <div class=""header"">
+            <h1>System Audit Report</h1>
+            <p>Generated on {DateTime.Now:F}</p>
+        </div>
+        
+        <div class=""card"">
+            <h2>System Information</h2>
+            <div class=""grid-list"">
+                <div class=""data-item"">
+                    <span class=""data-label"">Computer Name</span>
+                    <span class=""data-value"">{computerName}</span>
+                </div>
+                <div class=""data-item"">
+                    <span class=""data-label"">OS Version</span>
+                    <span class=""data-value"">{osVersion}</span>
+                </div>
+                <div class=""data-item"">
+                    <span class=""data-label"">IP Address</span>
+                    <span class=""data-value"">{ipAddress}</span>
+                </div>
+                <div class=""data-item"">
+                    <span class=""data-label"">Antivirus Status</span>
+                    <span class=""data-value"">{antivirus}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class=""card"">
+            <h2>Hardware Specs</h2>
+            <div class=""grid-list"">
+                <div class=""data-item"">
+                    <span class=""data-label"">CPU</span>
+                    <span class=""data-value"">{cpu}</span>
+                </div>
+                <div class=""data-item"">
+                    <span class=""data-label"">RAM</span>
+                    <span class=""data-value"">{ram}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class=""card"">
+            <h2>Disk Space</h2>
+            <ul class=""drives-list"">
+                {drivesHtml}
+            </ul>
+        </div>
+    </div>
+</body>
+</html>";
+
+            await File.WriteAllTextAsync(path, html, ct);
+
+            var info = new FileInfo(path);
+            var report = new ReportModel
+            {
+                Title = filename,
+                Description = "Full System Audit Report (HTML)",
+                FilePath = path,
+                Type = ReportType.HTML,
+                FileSizeBytes = info.Length
+            };
+
+            return Result<ReportModel>.Success(report);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "HTML Generation failed");
             return Result<ReportModel>.Failure(ex.Message, ex);
         }
     }

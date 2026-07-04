@@ -50,6 +50,15 @@ public partial class PatchManagerViewModel : ObservableObject
     [ObservableProperty]
     private bool _isScanningSoftware;
 
+    [ObservableProperty]
+    private ObservableCollection<MissingUpdateModel> _missingUpdates = new();
+
+    [ObservableProperty]
+    private bool _isScanningMissingUpdates;
+
+    [ObservableProperty]
+    private bool _rebootRequired;
+
     public PatchManagerViewModel(ILogger<PatchManagerViewModel> logger, IPatchManagerService patchService)
     {
         _logger = logger;
@@ -176,5 +185,66 @@ public partial class PatchManagerViewModel : ObservableObject
         }
         
         IsScanningSoftware = false;
+    }
+
+    [RelayCommand]
+    public async Task ScanMissingUpdatesAsync(CancellationToken ct)
+    {
+        if (IsScanningMissingUpdates) return;
+
+        IsScanningMissingUpdates = true;
+        HasError = false;
+        ErrorMessage = string.Empty;
+        MissingUpdates.Clear();
+
+        _logger.LogInformation("Scanning for missing Windows Updates...");
+
+        var result = await _patchService.GetMissingUpdatesAsync(ct);
+
+        if (result.IsSuccess && result.Value != null)
+        {
+            MissingUpdates = new ObservableCollection<MissingUpdateModel>(result.Value);
+            _logger.LogInformation("Found {Count} missing updates.", MissingUpdates.Count);
+        }
+        else
+        {
+            HasError = true;
+            ErrorMessage = result.ErrorMessage ?? "Failed to scan for missing Windows Updates.";
+            _logger.LogError("Missing updates scan failed: {Error}", ErrorMessage);
+        }
+
+        IsScanningMissingUpdates = false;
+    }
+
+    [RelayCommand]
+    public async Task InstallMissingUpdatesAsync(CancellationToken ct)
+    {
+        if (IsScanningMissingUpdates) return;
+        
+        IsScanningMissingUpdates = true;
+        HasError = false;
+        ErrorMessage = string.Empty;
+        
+        var result = await _patchService.InstallMissingUpdatesAsync(ct);
+        
+        IsScanningMissingUpdates = false;
+
+        if (result.IsSuccess && result.Value != null)
+        {
+            if (result.Value.RebootRequired)
+            {
+                RebootRequired = true;
+            }
+            
+            // Rescan after install
+            await ScanMissingUpdatesAsync(ct);
+            // Also refresh installed updates
+            await InitializeAsync(ct);
+        }
+        else
+        {
+            HasError = true;
+            ErrorMessage = result.ErrorMessage ?? "Failed to install missing Windows Updates.";
+        }
     }
 }

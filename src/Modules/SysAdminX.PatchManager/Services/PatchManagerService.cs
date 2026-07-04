@@ -146,4 +146,141 @@ public class PatchManagerService : IPatchManagerService
             return Result<bool>.Failure(ex.Message, ex);
         }
     }
+
+    public async Task<Result<List<MissingUpdateModel>>> GetMissingUpdatesAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            _logger.LogInformation("Scanning for missing Windows Updates");
+            
+            string psScript = @"
+$updateSession = New-Object -ComObject Microsoft.Update.Session
+$updateSearcher = $updateSession.CreateUpdateSearcher()
+$searchResult = $updateSearcher.Search('IsInstalled=0 and Type=''Software'' and IsHidden=0')
+$updates = $searchResult.Updates
+$result = @()
+for ($i = 0; $i -lt $updates.Count; $i++) {
+    $update = $updates.Item($i)
+    $kbArticles = @()
+    foreach ($kb in $update.KBArticleIDs) {
+        $kbArticles += 'KB' + $kb
+    }
+    $result += [PSCustomObject]@{
+        Title = $update.Title
+        Description = $update.Description
+        KBArticles = $kbArticles -join ', '
+        IsDownloaded = $update.IsDownloaded
+    }
+}
+@($result) | ConvertTo-Json -Depth 2 -Compress
+";
+            string tempFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "ScanUpdates.ps1");
+            await System.IO.File.WriteAllTextAsync(tempFile, psScript, ct);
+            
+            var result = await _processService.ExecuteAsync("powershell.exe", $"-NoProfile -ExecutionPolicy Bypass -File \"{tempFile}\"", requireElevation: false, ct: ct);
+            
+            if (System.IO.File.Exists(tempFile))
+            {
+                System.IO.File.Delete(tempFile);
+            }
+
+            if (!result.IsSuccess)
+            {
+                return Result<List<MissingUpdateModel>>.Failure(result.ErrorMessage ?? "Failed to scan updates");
+            }
+
+            var output = result.Value?.Trim() ?? string.Empty;
+            if (string.IsNullOrEmpty(output) || output == "null")
+            {
+                return Result<List<MissingUpdateModel>>.Success(new List<MissingUpdateModel>());
+            }
+
+            var updates = System.Text.Json.JsonSerializer.Deserialize<List<MissingUpdateModel>>(output);
+            return Result<List<MissingUpdateModel>>.Success(updates ?? new List<MissingUpdateModel>());
+        }
+        catch (OperationCanceledException)
+        {
+            return Result<List<MissingUpdateModel>>.Cancelled();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get missing updates");
+            return Result<List<MissingUpdateModel>>.Failure(ex.Message, ex);
+        }
+    }
+
+    public async Task<Result<InstallUpdatesResultModel>> InstallMissingUpdatesAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            _logger.LogInformation("Installing missing Windows Updates");
+            
+            string resultFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $@"InstallUpdateResult_{Guid.NewGuid()}.json");
+            
+            string psScript = $@"
+$updateSession = New-Object -ComObject Microsoft.Update.Session
+$updateSearcher = $updateSession.CreateUpdateSearcher()
+Write-Host 'Searching for missing updates...' -ForegroundColor Cyan
+$searchResult = $updateSearcher.Search('IsInstalled=0 and Type=''Software'' and IsHidden=0')
+$updates = $searchResult.Updates
+
+if ($updates.Count -eq 0) {{
+    Write-Host 'No updates found to install.' -ForegroundColor Green
+    $json = @{{ RebootRequired = $false; ResultCode = 2 }}
+    $json | ConvertTo-Json -Compress | Out-File -FilePath '{resultFile}' -Encoding UTF8
+    Start-Sleep -Seconds 2
+    exit 0
+}}
+
+Write-Host ""Found $($updates.Count) updates. Starting download..."" -ForegroundColor Cyan
+$downloader = $updateSession.CreateUpdateDownloader()
+$downloader.Updates = $updates
+$downloader.Download()
+
+Write-Host 'Download complete. Starting installation...' -ForegroundColor Cyan
+$installer = $updateSession.CreateUpdateInstaller()
+$installer.Updates = $updates
+$installResult = $installer.Install()
+
+Write-Host 'Installation complete.' -ForegroundColor Green
+$json = @{{
+    RebootRequired = $installResult.RebootRequired
+    ResultCode = $installResult.ResultCode
+}}
+$json | ConvertTo-Json -Compress | Out-File -FilePath '{resultFile}' -Encoding UTF8
+Write-Host 'Press any key to continue...'
+$Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown') | Out-Null
+";
+            string tempFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "InstallUpdates.ps1");
+            await System.IO.File.WriteAllTextAsync(tempFile, psScript, ct);
+            
+            var result = await _processService.ExecuteAsync("cmd.exe", $"/c powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"{tempFile}\"", requireElevation: true, ct: ct);
+            
+            if (System.IO.File.Exists(tempFile))
+            {
+                System.IO.File.Delete(tempFile);
+            }
+
+            if (!System.IO.File.Exists(resultFile))
+            {
+                return Result<InstallUpdatesResultModel>.Failure("Installation result file not found. Process may have failed or been cancelled.");
+            }
+
+            var jsonContent = await System.IO.File.ReadAllTextAsync(resultFile, ct);
+            System.IO.File.Delete(resultFile);
+
+            var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var installResult = System.Text.Json.JsonSerializer.Deserialize<InstallUpdatesResultModel>(jsonContent, options);
+            return Result<InstallUpdatesResultModel>.Success(installResult ?? new InstallUpdatesResultModel());
+        }
+        catch (OperationCanceledException)
+        {
+            return Result<InstallUpdatesResultModel>.Cancelled();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to install missing updates");
+            return Result<InstallUpdatesResultModel>.Failure(ex.Message, ex);
+        }
+    }
 }

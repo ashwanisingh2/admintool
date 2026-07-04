@@ -16,5 +16,6 @@ public interface IRemoteSupportService
 {
     Task LaunchRdpAsync(string hostname);
     Task LaunchComputerManagementAsync(string hostname);
-    Task LaunchPsExecAsync(string hostname);
+    Task LaunchRemoteCommandPromptAsync(string hostname);
+    Task LaunchRemotePowerShellAsync(string hostname);
 }

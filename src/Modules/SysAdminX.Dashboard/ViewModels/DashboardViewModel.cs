@@ -7,8 +7,10 @@
 
 using System;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LiveChartsCore;
@@ -32,6 +34,11 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     private readonly ISystemHealthService _healthService;
     private CancellationTokenSource? _monitoringCts;
     private bool _disposed;
+
+    private DispatcherTimer? _liveTimer;
+    private PerformanceCounter? _cpuCounter;
+    private PerformanceCounter? _ramCounter;
+    private ulong _totalRamMb;
 
     private const int MAX_CHART_POINTS = 60;
     private const int MONITORING_INTERVAL_MS = 1500;
@@ -185,12 +192,12 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             new LineSeries<ObservableValue>
             {
                 Values = _cpuValues,
-                Fill = new SolidColorPaint(new SKColor(0, 120, 212, 50)),
-                Stroke = new SolidColorPaint(new SKColor(0, 120, 212), 2),
+                Fill = new LinearGradientPaint(new[] { new SKColor(0, 120, 212, 100), new SKColor(0, 120, 212, 5) }, new SKPoint(0.5f, 0f), new SKPoint(0.5f, 1f)),
+                Stroke = new SolidColorPaint(new SKColor(0, 120, 212), 3),
                 GeometrySize = 0,
                 GeometryStroke = null,
-                LineSmoothness = 0.3,
-                AnimationsSpeed = TimeSpan.FromMilliseconds(200),
+                LineSmoothness = 0.65,
+                AnimationsSpeed = TimeSpan.FromMilliseconds(500),
                 IsHoverable = false
             }
         };
@@ -200,12 +207,12 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             new LineSeries<ObservableValue>
             {
                 Values = _ramValues,
-                Fill = new SolidColorPaint(new SKColor(139, 92, 246, 50)),
-                Stroke = new SolidColorPaint(new SKColor(139, 92, 246), 2),
+                Fill = new LinearGradientPaint(new[] { new SKColor(139, 92, 246, 100), new SKColor(139, 92, 246, 5) }, new SKPoint(0.5f, 0f), new SKPoint(0.5f, 1f)),
+                Stroke = new SolidColorPaint(new SKColor(139, 92, 246), 3),
                 GeometrySize = 0,
                 GeometryStroke = null,
-                LineSmoothness = 0.3,
-                AnimationsSpeed = TimeSpan.FromMilliseconds(200),
+                LineSmoothness = 0.65,
+                AnimationsSpeed = TimeSpan.FromMilliseconds(500),
                 IsHoverable = false
             }
         };
@@ -297,6 +304,29 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         _monitoringCts = new CancellationTokenSource();
         var ct = _monitoringCts.Token;
 
+        if (_liveTimer == null)
+        {
+            try
+            {
+                _cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
+                _ramCounter = new PerformanceCounter("Memory", "Available MBytes");
+                _cpuCounter.NextValue(); // Prime the CPU counter
+                
+                _totalRamMb = (ulong)(GC.GetGCMemoryInfo().TotalAvailableMemoryBytes / 1048576);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to initialize performance counters for live graphs.");
+            }
+
+            _liveTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(1)
+            };
+            _liveTimer.Tick += LiveTimer_Tick;
+            _liveTimer.Start();
+        }
+
         await _healthService.StartMonitoringAsync(MONITORING_INTERVAL_MS, health =>
         {
             System.Windows.Application.Current?.Dispatcher.Invoke(() =>
@@ -306,26 +336,46 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         }, ct);
     }
 
+    private void LiveTimer_Tick(object? sender, EventArgs e)
+    {
+        if (_cpuCounter != null)
+        {
+            try
+            {
+                var cpuVal = Math.Round(_cpuCounter.NextValue(), 1);
+                CpuUsage = cpuVal;
+                _cpuValues.RemoveAt(0);
+                _cpuValues.Add(new ObservableValue(cpuVal));
+            }
+            catch { }
+        }
+
+        if (_ramCounter != null && _totalRamMb > 0)
+        {
+            try
+            {
+                var availableMb = _ramCounter.NextValue();
+                var usedMb = _totalRamMb - availableMb;
+                if (usedMb < 0) usedMb = 0;
+                var ramVal = Math.Round((usedMb / (double)_totalRamMb) * 100.0, 1);
+                
+                RamUsage = ramVal;
+                RamUsedText = FormatBytes((ulong)(usedMb * 1048576));
+                RamTotalText = FormatBytes((ulong)(_totalRamMb * 1048576));
+
+                _ramValues.RemoveAt(0);
+                _ramValues.Add(new ObservableValue(ramVal));
+            }
+            catch { }
+        }
+    }
+
     private void UpdateHealthDisplay(SystemHealthModel health)
     {
-        // CPU
-        CpuUsage = health.CpuUsagePercent;
+        // CPU Name (static info)
         CpuName = health.CpuName;
         CpuCoresInfo = $"{health.CpuCores} Cores / {health.CpuThreads} Threads";
         CpuSpeedInfo = $"{health.CpuSpeedMhz / 1000.0:F2} GHz";
-
-        // Update CPU chart
-        _cpuValues.RemoveAt(0);
-        _cpuValues.Add(new ObservableValue(health.CpuUsagePercent));
-
-        // RAM
-        RamUsage = health.RamUsagePercent;
-        RamUsedText = FormatBytes(health.UsedMemoryBytes);
-        RamTotalText = FormatBytes(health.TotalMemoryBytes);
-
-        // Update RAM chart
-        _ramValues.RemoveAt(0);
-        _ramValues.Add(new ObservableValue(health.RamUsagePercent));
 
         // Disk
         DiskUsage = health.DiskUsagePercent;
@@ -364,6 +414,15 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         _monitoringCts?.Cancel();
         _monitoringCts?.Dispose();
         _monitoringCts = null;
+
+        _liveTimer?.Stop();
+        _liveTimer = null;
+
+        _cpuCounter?.Dispose();
+        _cpuCounter = null;
+
+        _ramCounter?.Dispose();
+        _ramCounter = null;
     }
 
     #region Formatting Helpers

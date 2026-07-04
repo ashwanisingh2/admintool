@@ -19,5 +19,6 @@ public interface IReportService
 {
     Task<Result<ReportModel>> GeneratePdfReportAsync(string outputPath, CancellationToken ct = default);
     Task<Result<ReportModel>> GenerateJsonReportAsync(string outputPath, CancellationToken ct = default);
+    Task<Result<ReportModel>> GenerateHtmlAuditReportAsync(string outputPath, CancellationToken ct = default);
     Task<List<ReportModel>> GetReportHistoryAsync();
 }

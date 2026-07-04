@@ -85,8 +85,8 @@
                     </Grid>
                 </ui:CardAction>
                 
-                <!-- PsExec Card -->
-                <ui:CardAction Margin="0,0,16,16" Command="{Binding LaunchPsExecCommand}">
+                <!-- Remote Command Prompt Card -->
+                <ui:CardAction Margin="0,0,16,16" Command="{Binding LaunchRemoteCommandPromptCommand}">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
@@ -95,10 +95,27 @@
                         
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
                             <ui:SymbolIcon Symbol="GlanceDefault12" FontSize="24" Margin="0,0,12,0" Foreground="{DynamicResource SystemAccentColorPrimaryBrush}" />
-                            <TextBlock Text="Remote Command Line" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <TextBlock Text="Remote Command Prompt" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
                         </StackPanel>
                         
                         <TextBlock Grid.Row="1" Text="Launch PsExec to open a remote command prompt as SYSTEM on the target endpoint." TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    </Grid>
+                </ui:CardAction>
+
+                <!-- Remote PowerShell Card -->
+                <ui:CardAction Margin="0,0,16,16" Command="{Binding LaunchRemotePowerShellCommand}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <ui:SymbolIcon Symbol="Terminal24" FontSize="24" Margin="0,0,12,0" Foreground="{DynamicResource SystemAccentColorPrimaryBrush}" />
+                            <TextBlock Text="Remote PowerShell" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        </StackPanel>
+                        
+                        <TextBlock Grid.Row="1" Text="Launch PsExec to open a remote PowerShell session as SYSTEM on the target endpoint." TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                     </Grid>
                 </ui:CardAction>
 

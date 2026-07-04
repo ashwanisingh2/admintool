@@ -69,7 +69,7 @@ public class RemoteSupportService : IRemoteSupportService
         return Task.CompletedTask;
     }
     
-    public Task LaunchPsExecAsync(string hostname)
+    public Task LaunchRemoteCommandPromptAsync(string hostname)
     {
         try
         {
@@ -87,7 +87,30 @@ public class RemoteSupportService : IRemoteSupportService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to launch PsExec");
+            _logger.LogError(ex, "Failed to launch Remote Command Prompt");
+        }
+        
+        return Task.CompletedTask;
+    }
+
+    public Task LaunchRemotePowerShellAsync(string hostname)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(hostname)) return Task.CompletedTask;
+            
+            _logger.LogInformation("Launching Remote PowerShell for {Hostname}", hostname);
+            
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "cmd.exe",
+                Arguments = $"/c psexec \\\\{hostname} powershell.exe",
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to launch Remote PowerShell");
         }
         
         return Task.CompletedTask;

@@ -40,8 +40,14 @@ public partial class RemoteSupportViewModel : ObservableObject
     }
     
     [RelayCommand]
-    private async Task LaunchPsExecAsync()
+    private async Task LaunchRemoteCommandPromptAsync()
     {
-        await _remoteService.LaunchPsExecAsync(TargetHostname);
+        await _remoteService.LaunchRemoteCommandPromptAsync(TargetHostname);
+    }
+
+    [RelayCommand]
+    private async Task LaunchRemotePowerShellAsync()
+    {
+        await _remoteService.LaunchRemotePowerShellAsync(TargetHostname);
     }
 }

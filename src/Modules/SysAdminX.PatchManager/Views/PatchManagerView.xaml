@@ -134,6 +134,45 @@
                     </Grid>
                 </TabItem>
                 
+                <!-- Missing Updates Tab -->
+                <TabItem Header="Missing Updates">
+                    <Grid Margin="0,16,0,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,16">
+                            <ui:Button Content="Scan Missing Updates" Appearance="Primary" Command="{Binding ScanMissingUpdatesCommand}" />
+                            <ui:Button Content="Install All Updates" Appearance="Secondary" Margin="8,0,0,0" Command="{Binding InstallMissingUpdatesCommand}" />
+                            <ui:ProgressRing IsIndeterminate="True" Width="24" Height="24" Margin="16,0,0,0" Visibility="{Binding IsScanningMissingUpdates, Converter={StaticResource BoolToVis}}" />
+                        </StackPanel>
+
+                        <!-- Reboot Warning -->
+                        <ui:InfoBar Grid.Row="1" Title="Reboot Required" Message="A restart is required to complete the installation of some updates." Severity="Warning" IsOpen="{Binding RebootRequired}" IsClosable="True" Margin="0,0,0,16" />
+
+                        <DataGrid Grid.Row="2"
+                                  ItemsSource="{Binding MissingUpdates}"
+                                  AutoGenerateColumns="False"
+                                  CanUserAddRows="False"
+                                  IsReadOnly="True"
+                                  HeadersVisibility="Column"
+                                  GridLinesVisibility="Horizontal"
+                                  HorizontalGridLinesBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                  BorderThickness="1"
+                                  BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                  Background="{DynamicResource CardBackgroundFillColorDefaultBrush}">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Title" Binding="{Binding Title}" Width="2*" />
+                                <DataGridTextColumn Header="KB Articles" Binding="{Binding KBArticles}" Width="1*" />
+                                <DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="3*" />
+                                <DataGridCheckBoxColumn Header="Downloaded" Binding="{Binding IsDownloaded}" Width="SizeToHeader" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </TabItem>
+                
                 <!-- Software Manager Tab -->
                 <TabItem Header="Software Updates (Winget)">
                     <Grid Margin="0,16,0,0">

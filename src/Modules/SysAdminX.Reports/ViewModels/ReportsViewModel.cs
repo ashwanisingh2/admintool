@@ -29,6 +29,9 @@ public partial class ReportsViewModel : ObservableObject
     [ObservableProperty]
     private ObservableCollection<ReportModel> _reports = new();
 
+    [ObservableProperty]
+    private bool _isGenerating;
+
     public ReportsViewModel(ILogger<ReportsViewModel> logger, IReportService reportService)
     {
         _logger = logger;
@@ -69,6 +72,27 @@ public partial class ReportsViewModel : ObservableObject
         if (result.IsSuccess && result.Value != null)
         {
             Reports.Insert(0, result.Value);
+        }
+    }
+
+    [RelayCommand]
+    public async Task GenerateHtmlAuditAsync(CancellationToken ct)
+    {
+        IsGenerating = true;
+        try
+        {
+            string filename = $"AuditReport_{DateTime.Now:yyyyMMdd_HHmmss}.html";
+            var result = await _reportService.GenerateHtmlAuditReportAsync(filename, ct);
+            
+            if (result.IsSuccess && result.Value != null)
+            {
+                Reports.Insert(0, result.Value);
+                OpenReport(result.Value);
+            }
+        }
+        finally
+        {
+            IsGenerating = false;
         }
     }
 

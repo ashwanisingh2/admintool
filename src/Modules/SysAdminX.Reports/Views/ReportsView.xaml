@@ -9,6 +9,10 @@
     mc:Ignorable="d"
     Title="Reports"
     d:DataContext="{d:DesignInstance vm:ReportsViewModel, IsDesignTimeCreatable=False}">
+    
+    <Page.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+    </Page.Resources>
 
     <Grid Margin="24">
         <Grid.RowDefinitions>
@@ -41,6 +45,30 @@
             <!-- Actions Panel -->
             <StackPanel Grid.Column="0">
                 <ui:TextBlock FontTypography="Subtitle" Text="Generate New" Margin="0,0,0,12" />
+                
+                <!-- One-Click Audit Report -->
+                <Grid Margin="0,0,0,12">
+                    <ui:Button Command="{Binding GenerateHtmlAuditCommand}"
+                               Appearance="Primary"
+                               HorizontalAlignment="Stretch"
+                               MinHeight="60">
+                        <StackPanel Orientation="Horizontal" Margin="8">
+                            <ui:SymbolIcon Symbol="DocumentSearch24" FontSize="28" Margin="0,0,12,0" />
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Generate Full System Audit Report" FontWeight="Bold" FontSize="15" />
+                                <TextBlock Text="Instantly generates and opens a styled HTML report with full system details." Opacity="0.8" FontSize="12" />
+                            </StackPanel>
+                        </StackPanel>
+                    </ui:Button>
+                    <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
+                            Visibility="{Binding IsGenerating, Converter={StaticResource BooleanToVisibilityConverter}}"
+                            CornerRadius="4">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <ui:ProgressRing IsIndeterminate="True" Margin="0,0,12,0" />
+                            <TextBlock Text="Generating Report..." FontWeight="SemiBold" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
                 
                 <ui:CardAction Command="{Binding GeneratePdfCommand}" Margin="0,0,0,12">
                     <StackPanel>
