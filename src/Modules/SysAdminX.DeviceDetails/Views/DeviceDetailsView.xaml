@@ -435,7 +435,7 @@
                                                 <TextBlock Text="{Binding TotalSize}" Style="{StaticResource ValueText}" />
                                             </StackPanel>
                                             
-                                            <ui:ProgressBar Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Value="{Binding UsagePercent}" Margin="0,4,0,8" />
+                                            <ProgressBar Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Value="{Binding UsagePercent}" Margin="0,4,0,8" />
                                         </Grid>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
