@@ -40,7 +40,7 @@ public class SystemHealthService : ISystemHealthService
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _wmiService = wmiService ?? throw new ArgumentNullException(nameof(wmiService));
 
-        InitializeCpuCounter();
+        Task.Run(() => InitializeCpuCounter());
     }
 
     /// <summary>

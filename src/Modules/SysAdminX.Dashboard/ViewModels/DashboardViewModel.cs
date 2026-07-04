@@ -306,18 +306,21 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
 
         if (_liveTimer == null)
         {
-            try
+            Task.Run(() =>
             {
-                _cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
-                _ramCounter = new PerformanceCounter("Memory", "Available MBytes");
-                _cpuCounter.NextValue(); // Prime the CPU counter
-                
-                _totalRamMb = (ulong)(GC.GetGCMemoryInfo().TotalAvailableMemoryBytes / 1048576);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to initialize performance counters for live graphs.");
-            }
+                try
+                {
+                    _cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
+                    _ramCounter = new PerformanceCounter("Memory", "Available MBytes");
+                    _cpuCounter.NextValue(); // Prime the CPU counter
+                    
+                    _totalRamMb = (ulong)(GC.GetGCMemoryInfo().TotalAvailableMemoryBytes / 1048576);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to initialize performance counters for live graphs.");
+                }
+            });
 
             _liveTimer = new DispatcherTimer
             {

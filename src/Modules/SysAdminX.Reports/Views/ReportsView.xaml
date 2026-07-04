@@ -53,7 +53,7 @@
                                HorizontalAlignment="Stretch"
                                MinHeight="60">
                         <StackPanel Orientation="Horizontal" Margin="8">
-                            <ui:SymbolIcon Symbol="DocumentSearch24" FontSize="28" Margin="0,0,12,0" />
+                            <ui:SymbolIcon Symbol="Document24" FontSize="28" Margin="0,0,12,0" />
                             <StackPanel VerticalAlignment="Center">
                                 <TextBlock Text="Generate Full System Audit Report" FontWeight="Bold" FontSize="15" />
                                 <TextBlock Text="Instantly generates and opens a styled HTML report with full system details." Opacity="0.8" FontSize="12" />
@@ -72,7 +72,7 @@
                 
                 <ui:CardAction Command="{Binding GeneratePdfCommand}" Margin="0,0,0,12">
                     <StackPanel>
-                        <ui:SymbolIcon Symbol="DocumentPdf24" Margin="0,0,0,8" />
+                        <ui:SymbolIcon Symbol="Document24" Margin="0,0,0,8" />
                         <TextBlock Text="Export to PDF" FontWeight="SemiBold" />
                         <TextBlock Text="Generates a human-readable PDF report containing current hardware specs and OS details."
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
@@ -82,7 +82,7 @@
 
                 <ui:CardAction Command="{Binding GenerateJsonCommand}" Margin="0,0,0,24">
                     <StackPanel>
-                        <ui:SymbolIcon Symbol="DocumentJavascript24" Margin="0,0,0,8" />
+                        <ui:SymbolIcon Symbol="Code24" Margin="0,0,0,8" />
                         <TextBlock Text="Export to JSON" FontWeight="SemiBold" />
                         <TextBlock Text="Generates a raw JSON payload of the entire system state, suitable for automated ingestion."
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
