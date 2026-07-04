@@ -40,9 +40,14 @@ public class ProcessExecutorService : IProcessExecutorService
             CreateNoWindow = !requireElevation,
             WindowStyle = requireElevation ? ProcessWindowStyle.Normal : ProcessWindowStyle.Hidden,
             RedirectStandardOutput = !requireElevation,
-            RedirectStandardError = !requireElevation,
-            StandardOutputEncoding = Encoding.UTF8
+            RedirectStandardError = !requireElevation
         };
+        
+        if (!requireElevation)
+        {
+            startInfo.StandardOutputEncoding = Encoding.UTF8;
+            startInfo.StandardErrorEncoding = Encoding.UTF8;
+        }
 
         if (requireElevation)
         {
