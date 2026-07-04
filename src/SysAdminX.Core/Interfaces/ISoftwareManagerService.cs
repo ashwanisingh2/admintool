@@ -14,5 +14,6 @@ namespace SysAdminX.Core.Interfaces;
 public interface ISoftwareManagerService
 {
     Task<Result<IEnumerable<SoftwareItemModel>>> GetInstalledSoftwareAsync();
-    Task<Result<bool>> UninstallSoftwareAsync(string uninstallString);
+    Task<Result<bool>> UninstallSoftwareAsync(string uninstallString, string appName);
+    Task<Result<bool>> InstallAppViaWingetAsync(string wingetId);
 }

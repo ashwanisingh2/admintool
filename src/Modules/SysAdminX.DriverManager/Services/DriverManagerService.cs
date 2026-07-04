@@ -326,4 +326,100 @@ $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
             return Result<bool>.Failure(ex.Message, ex);
         }
     }
+
+    public async Task<Result<List<DriverInfoModel>>> ScanUnsignedDriversAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            _logger.LogInformation("Scanning for unsigned drivers using driverquery");
+
+            var result = await _processService.ExecuteAsync("driverquery", "/si /FO CSV", false, ct);
+            if (!result.IsSuccess)
+            {
+                return Result<List<DriverInfoModel>>.Failure(result.ErrorMessage ?? "Failed to run driverquery");
+            }
+
+            var list = new List<DriverInfoModel>();
+            var lines = (result.Value ?? "").Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            
+            // Skip the header
+            for (int i = 1; i < lines.Length; i++)
+            {
+                var line = lines[i];
+                var parts = line.Split(new[] { "\",\"" }, StringSplitOptions.None);
+                if (parts.Length >= 4)
+                {
+                    // "DeviceName","InfName","IsSigned","Manufacturer"
+                    var isSignedStr = parts[2].Trim('"').ToUpperInvariant();
+                    if (isSignedStr == "FALSE")
+                    {
+                        var devName = parts[0].Trim('"');
+                        var infName = parts[1].Trim('"');
+                        var mfg = parts[3].Trim('"');
+
+                        list.Add(new DriverInfoModel
+                        {
+                            DeviceName = devName,
+                            InfName = infName,
+                            Manufacturer = mfg,
+                            Provider = mfg,
+                            Status = "Unsigned",
+                            Version = "Unknown",
+                            ClassName = "Unknown"
+                        });
+                    }
+                }
+            }
+
+            return Result<List<DriverInfoModel>>.Success(list);
+        }
+        catch (OperationCanceledException)
+        {
+            return Result<List<DriverInfoModel>>.Cancelled();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to scan unsigned drivers");
+            return Result<List<DriverInfoModel>>.Failure(ex.Message, ex);
+        }
+    }
+
+    public Task<Result<OemUpdaterInfoModel?>> CheckOemUpdaterAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            _logger.LogInformation("Checking for OEM update tools");
+
+            var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+            var programFilesX86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
+
+            var pathsToCheck = new[]
+            {
+                new { Name = "Dell Command Update", Path = Path.Combine(programFilesX86, "Dell", "CommandUpdate", "dcu-cli.exe") },
+                new { Name = "Dell Command Update", Path = Path.Combine(programFiles, "Dell", "CommandUpdate", "dcu-cli.exe") },
+                new { Name = "Lenovo System Update", Path = Path.Combine(programFilesX86, "Lenovo", "System Update", "tvsu.exe") },
+                new { Name = "HP Support Assistant", Path = Path.Combine(programFilesX86, "Hewlett-Packard", "HP Support Framework", "HPSF.exe") }
+            };
+
+            foreach (var item in pathsToCheck)
+            {
+                if (File.Exists(item.Path))
+                {
+                    return Task.FromResult(Result<OemUpdaterInfoModel?>.Success(new OemUpdaterInfoModel
+                    {
+                        Name = item.Name,
+                        ExecutablePath = item.Path,
+                        IsInstalled = true
+                    }));
+                }
+            }
+            
+            return Task.FromResult(Result<OemUpdaterInfoModel?>.Success(null));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to check OEM updaters");
+            return Task.FromResult(Result<OemUpdaterInfoModel?>.Failure(ex.Message, ex));
+        }
+    }
 }

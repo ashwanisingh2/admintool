@@ -74,17 +74,40 @@ public class SoftwareManagerService : ISoftwareManagerService
         });
     }
 
-    public async Task<Result<bool>> UninstallSoftwareAsync(string uninstallString)
+    public async Task<Result<bool>> UninstallSoftwareAsync(string uninstallString, string appName)
     {
-        if (string.IsNullOrEmpty(uninstallString))
-        {
-            return Result<bool>.Failure("Uninstall string is empty.");
-        }
-
         return await Task.Run(() =>
         {
             try
             {
+                if (!string.IsNullOrEmpty(appName))
+                {
+                    // Try winget first
+                    var wingetProcessInfo = new ProcessStartInfo("winget", $"uninstall --name \"{appName}\" --silent")
+                    {
+                        UseShellExecute = false,
+                        CreateNoWindow = true,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true
+                    };
+
+                    using var wingetProcess = Process.Start(wingetProcessInfo);
+                    if (wingetProcess != null)
+                    {
+                        wingetProcess.WaitForExit();
+                        if (wingetProcess.ExitCode == 0)
+                        {
+                            return Result<bool>.Success(true);
+                        }
+                    }
+                }
+
+                if (string.IsNullOrEmpty(uninstallString))
+                {
+                    return Result<bool>.Failure("Uninstall string is empty and winget failed.");
+                }
+
+                // Fallback to standard registry string
                 var processInfo = new ProcessStartInfo("cmd.exe", $"/c {uninstallString}")
                 {
                     UseShellExecute = true,
@@ -103,6 +126,45 @@ public class SoftwareManagerService : ISoftwareManagerService
             {
                 _logger.LogError(ex, "Failed to uninstall software.");
                 return Result<bool>.Failure("Failed to uninstall software: " + ex.Message);
+            }
+        });
+    }
+
+    public async Task<Result<bool>> InstallAppViaWingetAsync(string wingetId)
+    {
+        return await Task.Run(() =>
+        {
+            try
+            {
+                var processInfo = new ProcessStartInfo("winget", $"install --id {wingetId} --silent --accept-package-agreements --accept-source-agreements")
+                {
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                };
+
+                using var process = Process.Start(processInfo);
+                if (process != null)
+                {
+                    process.WaitForExit();
+                    if (process.ExitCode == 0)
+                    {
+                        return Result<bool>.Success(true);
+                    }
+                    else
+                    {
+                        var error = process.StandardError.ReadToEnd();
+                        return Result<bool>.Failure($"Winget install failed with exit code {process.ExitCode}: {error}");
+                    }
+                }
+
+                return Result<bool>.Failure("Failed to start winget process.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to install software via winget.");
+                return Result<bool>.Failure("Failed to install software: " + ex.Message);
             }
         });
     }

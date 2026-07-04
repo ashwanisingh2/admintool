@@ -21,7 +21,6 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0" Text="Software Manager" FontSize="28" FontWeight="SemiBold" Margin="0,0,0,16" />
@@ -32,8 +31,17 @@
             Message="{Binding ErrorMessage}"
             Severity="Error"
             Margin="0,0,0,16" />
+
+        <TabControl Grid.Row="2" Style="{DynamicResource {x:Type TabControl}}">
+            <TabItem Header="Installed Software">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
             
-        <Grid Grid.Row="1" Margin="0,0,0,16">
+                    <Grid Grid.Row="0" Margin="0,16,0,16">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
@@ -50,8 +58,8 @@
             <ui:Button Grid.Column="1" Command="{Binding LoadSoftwareCommand}" Content="Refresh" Icon="{ui:SymbolIcon ArrowClockwise24}" />
         </Grid>
 
-        <ui:DataGrid
-            Grid.Row="2"
+                    <ui:DataGrid
+                        Grid.Row="1"
             ItemsSource="{Binding FilteredSoftwareList}"
             SelectedItem="{Binding SelectedSoftware}"
             AutoGenerateColumns="False"
@@ -66,11 +74,37 @@
             </DataGrid.Columns>
         </ui:DataGrid>
 
-        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,16,0,0" HorizontalAlignment="Right" IsEnabled="{Binding SelectedSoftware, Converter={StaticResource BoolToVis}}">
-            <ui:Button Command="{Binding UninstallCommand}" Content="Uninstall" Icon="{ui:SymbolIcon Delete24}" Appearance="Danger" />
-        </StackPanel>
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,16,0,0" HorizontalAlignment="Right" IsEnabled="{Binding SelectedSoftware, Converter={StaticResource BoolToVis}}">
+                        <ui:Button Command="{Binding UninstallCommand}" Content="Uninstall" Icon="{ui:SymbolIcon Delete24}" Appearance="Danger" />
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+            
+            <TabItem Header="App Store / Quick Install">
+                <Grid Margin="0,16,0,0">
+                    <ItemsControl ItemsSource="{Binding PopularApps}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <ui:Card Margin="0,0,0,8">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <ui:SymbolIcon Symbol="{Binding Icon}" FontSize="24" Grid.Column="0" Margin="0,0,16,0" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding Name}" Grid.Column="1" FontSize="16" VerticalAlignment="Center" />
+                                        <ui:Button Grid.Column="2" Content="Install" Command="{Binding DataContext.InstallAppCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Icon="{ui:SymbolIcon ArrowDownload24}" Appearance="Primary" />
+                                    </Grid>
+                                </ui:Card>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
+            </TabItem>
+        </TabControl>
 
-        <Grid Grid.Row="0" Grid.RowSpan="4" Background="#80000000" Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}">
+        <Grid Grid.Row="0" Grid.RowSpan="3" Background="#80000000" Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}">
             <ui:ProgressRing IsIndeterminate="True" Width="48" Height="48" HorizontalAlignment="Center" VerticalAlignment="Center" />
         </Grid>
     </Grid>

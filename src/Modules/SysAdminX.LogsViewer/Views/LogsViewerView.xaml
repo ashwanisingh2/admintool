@@ -30,12 +30,23 @@
                            Margin="0,4,0,0" />
             </StackPanel>
             
-            <ui:Button HorizontalAlignment="Right" VerticalAlignment="Top" Command="{Binding RefreshLogsCommand}" Appearance="Secondary">
-                <StackPanel Orientation="Horizontal">
-                    <ui:SymbolIcon Symbol="ArrowCounterclockwise24" Margin="0,0,8,0" />
-                    <TextBlock Text="Refresh" />
-                </StackPanel>
-            </ui:Button>
+            <StackPanel HorizontalAlignment="Right" VerticalAlignment="Top" Orientation="Horizontal">
+                <ui:ToggleSwitch Content="Live Auto-Refresh" IsChecked="{Binding IsAutoRefreshEnabled}" Margin="0,0,16,0" VerticalAlignment="Center" />
+                
+                <ui:Button Command="{Binding ExportLogsCommand}" Appearance="Secondary" Margin="0,0,8,0">
+                    <StackPanel Orientation="Horizontal">
+                        <ui:SymbolIcon Symbol="Save24" Margin="0,0,8,0" />
+                        <TextBlock Text="Export" />
+                    </StackPanel>
+                </ui:Button>
+
+                <ui:Button Command="{Binding RefreshLogsCommand}" Appearance="Secondary">
+                    <StackPanel Orientation="Horizontal">
+                        <ui:SymbolIcon Symbol="ArrowCounterclockwise24" Margin="0,0,8,0" />
+                        <TextBlock Text="Refresh" />
+                    </StackPanel>
+                </ui:Button>
+            </StackPanel>
         </Grid>
 
         <!-- Filters -->

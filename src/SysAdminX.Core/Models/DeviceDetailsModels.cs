@@ -83,6 +83,7 @@ public record StorageDriveModel
     public string UsedSpace { get; init; } = "";
     public double UsagePercent { get; init; }
     public string DriveType { get; init; } = "";
+    public string HealthStatus { get; init; } = "";
 }
 
 /// <summary>

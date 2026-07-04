@@ -423,6 +423,7 @@
                                                 <RowDefinition Height="Auto" />
                                                 <RowDefinition Height="Auto" />
                                                 <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
                                             </Grid.RowDefinitions>
                                             
                                             <TextBlock Grid.Row="0" Grid.Column="0" Text="Drive:" Style="{StaticResource LabelText}" />
@@ -445,7 +446,10 @@
                                             <TextBlock Grid.Row="3" Grid.Column="0" Text="Type:" Style="{StaticResource LabelText}" />
                                             <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding DriveType}" Style="{StaticResource ValueText}" />
 
-                                            <ProgressBar Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" Value="{Binding UsagePercent}" Margin="0,4,0,8" />
+                                            <TextBlock Grid.Row="4" Grid.Column="0" Text="Health Status:" Style="{StaticResource LabelText}" />
+                                            <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding HealthStatus}" Style="{StaticResource ValueText}" />
+
+                                            <ProgressBar Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2" Value="{Binding UsagePercent}" Margin="0,4,0,8" />
                                         </Grid>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>

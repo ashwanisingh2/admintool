@@ -33,4 +33,18 @@ public interface IDriverManagerService
     Task<Result> ExportDriversAsync(string destinationFolder, CancellationToken ct = default);
     Task<Result<List<string>>> ScanDriverUpdatesAsync(CancellationToken ct = default);
     Task<Result<bool>> InstallDriverUpdatesAsync(CancellationToken ct = default);
+    
+    /// <summary>
+    /// Scans the system for unsigned drivers.
+    /// </summary>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>A result containing a list of unsigned drivers.</returns>
+    Task<Result<List<DriverInfoModel>>> ScanUnsignedDriversAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Checks for the presence of OEM update tools.
+    /// </summary>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>A result containing information about an OEM updater if found.</returns>
+    Task<Result<OemUpdaterInfoModel?>> CheckOemUpdaterAsync(CancellationToken ct = default);
 }

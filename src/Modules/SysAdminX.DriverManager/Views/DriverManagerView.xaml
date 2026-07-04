@@ -22,6 +22,15 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
+        
+        <Style x:Key="OemUpdaterVisibilityStyle" TargetType="StackPanel">
+            <Setter Property="Visibility" Value="Collapsed" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding OemUpdater.IsInstalled}" Value="True">
+                    <Setter Property="Visibility" Value="Visible" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
     </Page.Resources>
 
     <Grid>
@@ -247,6 +256,75 @@
                                 </ListView>
                             </Grid>
                         </Border>
+                    </Grid>
+                </TabItem>
+
+                <TabItem Header="Unsigned Drivers">
+                    <Grid Margin="0,16,0,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        
+                        <Grid Grid.Row="0" Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            
+                            <StackPanel Grid.Column="0" Orientation="Vertical" VerticalAlignment="Center">
+                                <TextBlock Text="Scan for unsigned drivers to verify driver integrity."
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                
+                                <StackPanel Orientation="Horizontal" Margin="0,8,0,0" Style="{StaticResource OemUpdaterVisibilityStyle}">
+                                    <TextBlock Text="OEM Updater detected:" Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                    <TextBlock Text="{Binding OemUpdater.Name}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,16,0" />
+                                    <ui:Button Appearance="Secondary" Command="{Binding LaunchOemUpdaterCommand}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <ui:SymbolIcon Symbol="Open24" Margin="0,0,8,0" />
+                                            <TextBlock Text="Launch OEM Updater" />
+                                        </StackPanel>
+                                    </ui:Button>
+                                </StackPanel>
+                            </StackPanel>
+                                       
+                            <ui:Button Grid.Column="1" 
+                                       Appearance="Primary"
+                                       Command="{Binding ScanUnsignedDriversCommand}">
+                                <StackPanel Orientation="Horizontal">
+                                    <ui:SymbolIcon Symbol="Search24" Margin="0,0,8,0" />
+                                    <TextBlock Text="Scan Unsigned Drivers" />
+                                </StackPanel>
+                            </ui:Button>
+                        </Grid>
+                        
+                        <!-- Unsigned Drivers Grid -->
+                        <DataGrid Grid.Row="1"
+                                  ItemsSource="{Binding UnsignedDrivers}"
+                                  AutoGenerateColumns="False"
+                                  CanUserAddRows="False"
+                                  CanUserDeleteRows="False"
+                                  IsReadOnly="True"
+                                  HeadersVisibility="Column"
+                                  GridLinesVisibility="Horizontal"
+                                  HorizontalGridLinesBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                  BorderThickness="1"
+                                  BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                  Background="{DynamicResource CardBackgroundFillColorDefaultBrush}">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Device Name" Binding="{Binding DeviceName}" Width="2.5*" />
+                                <DataGridTextColumn Header="INF Name" Binding="{Binding InfName}" Width="1.5*" />
+                                <DataGridTextColumn Header="Manufacturer" Binding="{Binding Manufacturer}" Width="1.5*" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                        
+                        <StackPanel Grid.Row="1" Visibility="{Binding IsScanningUnsigned, Converter={StaticResource BoolToVis}}" 
+                                    HorizontalAlignment="Center" 
+                                    VerticalAlignment="Center">
+                            <ui:ProgressRing IsIndeterminate="True" Width="32" Height="32" />
+                            <TextBlock Text="Scanning for unsigned drivers..." Margin="0,12,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
                     </Grid>
                 </TabItem>
             </TabControl>

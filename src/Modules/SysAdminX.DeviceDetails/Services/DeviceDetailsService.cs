@@ -280,6 +280,27 @@ public class DeviceDetailsService : IDeviceDetailsService
     private async Task<List<StorageDriveModel>> GetStorageInfoAsync(CancellationToken ct)
     {
         var drives = new List<StorageDriveModel>();
+
+        string healthStatus = "Unknown";
+        var diskResult = await _wmiService.QueryAsync("SELECT Status FROM Win32_DiskDrive", ct);
+        if (diskResult.IsSuccess && diskResult.Value != null)
+        {
+            healthStatus = "OK";
+            foreach (var disk in diskResult.Value)
+            {
+                var status = disk["Status"]?.ToString();
+                if (!string.IsNullOrEmpty(status) && status.Equals("Pred Fail", StringComparison.OrdinalIgnoreCase))
+                {
+                    healthStatus = "Pred Fail";
+                    break;
+                }
+                else if (!string.IsNullOrEmpty(status) && status != "OK")
+                {
+                    healthStatus = status;
+                }
+            }
+        }
+
         var wmiResult = await _wmiService.QueryAsync("SELECT DeviceID, VolumeName, FileSystem, Size, FreeSpace, DriveType FROM Win32_LogicalDisk WHERE DriveType=3", ct);
         if (wmiResult.IsSuccess && wmiResult.Value != null)
         {
@@ -298,7 +319,8 @@ public class DeviceDetailsService : IDeviceDetailsService
                     FreeSpace = $"{free / (1024.0 * 1024 * 1024):F1} GB",
                     UsedSpace = $"{used / (1024.0 * 1024 * 1024):F1} GB",
                     UsagePercent = pct,
-                    DriveType = "Local Disk"
+                    DriveType = "Local Disk",
+                    HealthStatus = healthStatus
                 });
             }
         }

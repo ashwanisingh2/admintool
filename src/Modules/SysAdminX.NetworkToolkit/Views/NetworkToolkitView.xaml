@@ -160,16 +160,33 @@
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
                         
-                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,16">
-                            <ui:TextBox PlaceholderText="Target IP (e.g. 127.0.0.1)"
-                                        Text="{Binding ScannerTarget, UpdateSourceTrigger=PropertyChanged}"
-                                        Width="250" Margin="0,0,16,0" />
-                            <ui:TextBox PlaceholderText="Ports (e.g. 21,22,80,443)"
-                                        Text="{Binding ScannerPorts, UpdateSourceTrigger=PropertyChanged}"
-                                        Width="200" Margin="0,0,16,0" />
-                            <ui:Button Content="Start Scan" Appearance="Primary" Command="{Binding StartPortScanCommand}" />
-                            <ui:ProgressRing IsIndeterminate="True" Width="24" Height="24" Margin="16,0,0,0" Visibility="{Binding IsScanning, Converter={StaticResource BoolToVis}}" />
-                        </StackPanel>
+                        <ui:Card Grid.Row="0" Margin="0,0,0,16" Padding="16">
+                            <StackPanel>
+                                <TextBlock Text="Scan Configuration" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,12" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                <StackPanel Orientation="Horizontal">
+                                    <StackPanel Margin="0,0,16,0">
+                                        <TextBlock Text="Target IP" Margin="0,0,0,4" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                        <ui:TextBox PlaceholderText="e.g. 127.0.0.1"
+                                                    Text="{Binding ScannerTarget, UpdateSourceTrigger=PropertyChanged}"
+                                                    Width="200" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,16,0">
+                                        <TextBlock Text="Start Port" Margin="0,0,0,4" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                        <ui:TextBox PlaceholderText="e.g. 1"
+                                                    Text="{Binding ScannerStartPort, UpdateSourceTrigger=PropertyChanged}"
+                                                    Width="100" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,24,0">
+                                        <TextBlock Text="End Port" Margin="0,0,0,4" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                        <ui:TextBox PlaceholderText="e.g. 1000"
+                                                    Text="{Binding ScannerEndPort, UpdateSourceTrigger=PropertyChanged}"
+                                                    Width="100" />
+                                    </StackPanel>
+                                    <ui:Button Content="Start Scan" Appearance="Primary" Command="{Binding StartPortScanCommand}" VerticalAlignment="Bottom" />
+                                    <ui:ProgressRing IsIndeterminate="True" Width="24" Height="24" Margin="16,0,0,0" VerticalAlignment="Bottom" Visibility="{Binding IsScanning, Converter={StaticResource BoolToVis}}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </ui:Card>
 
                         <DataGrid Grid.Row="1"
                                   ItemsSource="{Binding ScanResults}"
@@ -227,6 +244,71 @@
                     </Grid>
                 </TabItem>
                 
+                <!-- Wake-on-LAN Tab -->
+                <TabItem Header="Wake-on-LAN">
+                    <Grid Margin="0,16,0,0">
+                        <ui:Card VerticalAlignment="Top" HorizontalAlignment="Left" Padding="24" Width="500">
+                            <StackPanel>
+                                <TextBlock Text="Wake-on-LAN (Magic Packet)" FontWeight="SemiBold" FontSize="18" Margin="0,0,0,8" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                <TextBlock Text="Send a magic packet to a device on your network to wake it up." TextWrapping="Wrap" Margin="0,0,0,24" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                
+                                <TextBlock Text="MAC Address" Margin="0,0,0,4" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                <ui:TextBox PlaceholderText="e.g. 00:11:22:33:44:55"
+                                            Text="{Binding WolMacAddress, UpdateSourceTrigger=PropertyChanged}"
+                                            Margin="0,0,0,24" />
+                                
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <ui:ProgressRing IsIndeterminate="True" Width="24" Height="24" Margin="0,0,16,0" Visibility="{Binding IsSendingWol, Converter={StaticResource BoolToVis}}" />
+                                    <ui:Button Content="Send Wake-on-LAN" Appearance="Primary" Command="{Binding SendWakeOnLanCommand}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </ui:Card>
+                    </Grid>
+                </TabItem>
+                
+                <!-- IP Subnet Scanner Tab -->
+                <TabItem Header="IP Subnet Scanner">
+                    <Grid Margin="0,16,0,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        
+                        <ui:Card Grid.Row="0" Margin="0,0,0,16" Padding="16">
+                            <StackPanel>
+                                <TextBlock Text="Ping Sweep Configuration" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,12" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                <StackPanel Orientation="Horizontal">
+                                    <StackPanel Margin="0,0,24,0">
+                                        <TextBlock Text="Base IP / Subnet" Margin="0,0,0,4" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                        <ui:TextBox PlaceholderText="e.g. 192.168.1.0"
+                                                    Text="{Binding PingSweepBaseIP, UpdateSourceTrigger=PropertyChanged}"
+                                                    Width="200" />
+                                    </StackPanel>
+                                    <ui:Button Content="Start Ping Sweep" Appearance="Primary" Command="{Binding StartPingSweepCommand}" VerticalAlignment="Bottom" />
+                                    <ui:ProgressRing IsIndeterminate="True" Width="24" Height="24" Margin="16,0,0,0" VerticalAlignment="Bottom" Visibility="{Binding IsPingSweeping, Converter={StaticResource BoolToVis}}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </ui:Card>
+
+                        <DataGrid Grid.Row="1"
+                                  ItemsSource="{Binding PingSweepResults}"
+                                  AutoGenerateColumns="False"
+                                  CanUserAddRows="False"
+                                  IsReadOnly="True"
+                                  HeadersVisibility="Column"
+                                  GridLinesVisibility="Horizontal"
+                                  HorizontalGridLinesBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                  BorderThickness="1"
+                                  BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                  Background="{DynamicResource CardBackgroundFillColorDefaultBrush}">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="IP Address" Binding="{Binding IPAddress}" Width="200" />
+                                <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="150" />
+                                <DataGridTextColumn Header="Roundtrip Time (ms)" Binding="{Binding RoundtripTime}" Width="*" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </TabItem>
             </TabControl>
         </Grid>
     </Grid>

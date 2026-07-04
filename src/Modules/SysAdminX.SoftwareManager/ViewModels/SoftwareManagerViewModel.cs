@@ -14,6 +14,7 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using SysAdminX.Core.Interfaces;
 using SysAdminX.Core.Models;
+using SysAdminX.SoftwareManager.Models;
 
 namespace SysAdminX.SoftwareManager.ViewModels;
 
@@ -36,6 +37,7 @@ public partial class SoftwareManagerViewModel : ObservableObject
 
     public ObservableCollection<SoftwareItemModel> SoftwareList { get; } = new();
     public ObservableCollection<SoftwareItemModel> FilteredSoftwareList { get; } = new();
+    public ObservableCollection<PopularAppModel> PopularApps { get; } = new();
 
     public SoftwareManagerViewModel(
         ILogger<SoftwareManagerViewModel> logger,
@@ -43,6 +45,16 @@ public partial class SoftwareManagerViewModel : ObservableObject
     {
         _logger = logger;
         _softwareService = softwareService;
+        InitializePopularApps();
+    }
+
+    private void InitializePopularApps()
+    {
+        PopularApps.Add(new PopularAppModel { Name = "Google Chrome", WingetId = "Google.Chrome", Icon = "Web" });
+        PopularApps.Add(new PopularAppModel { Name = "VLC Media Player", WingetId = "VideoLAN.VLC", Icon = "Play" });
+        PopularApps.Add(new PopularAppModel { Name = "7-Zip", WingetId = "7zip.7zip", Icon = "FolderZip" });
+        PopularApps.Add(new PopularAppModel { Name = "Notepad++", WingetId = "Notepad++.Notepad++", Icon = "FileDocument" });
+        PopularApps.Add(new PopularAppModel { Name = "Visual Studio Code", WingetId = "Microsoft.VisualStudioCode", Icon = "CodeBraces" });
     }
 
     [RelayCommand]
@@ -84,7 +96,7 @@ public partial class SoftwareManagerViewModel : ObservableObject
         IsLoading = true;
         ErrorMessage = string.Empty;
 
-        var result = await _softwareService.UninstallSoftwareAsync(SelectedSoftware.UninstallString);
+        var result = await _softwareService.UninstallSoftwareAsync(SelectedSoftware.UninstallString, SelectedSoftware.DisplayName);
         if (!result.IsSuccess)
         {
             ErrorMessage = result.ErrorMessage ?? "Uninstall failed.";
@@ -92,6 +104,29 @@ public partial class SoftwareManagerViewModel : ObservableObject
         else
         {
             // Usually uninstallation is asynchronous or launches a wizard. We wait briefly then reload.
+            await Task.Delay(2000);
+            await LoadSoftwareAsync();
+        }
+
+        IsLoading = false;
+    }
+
+    [RelayCommand]
+    private async Task InstallAppAsync(PopularAppModel app)
+    {
+        if (app == null) return;
+
+        IsLoading = true;
+        ErrorMessage = string.Empty;
+
+        var result = await _softwareService.InstallAppViaWingetAsync(app.WingetId);
+        if (!result.IsSuccess)
+        {
+            ErrorMessage = result.ErrorMessage ?? $"Failed to install {app.Name}.";
+        }
+        else
+        {
+            // Reload software list to show newly installed app
             await Task.Delay(2000);
             await LoadSoftwareAsync();
         }

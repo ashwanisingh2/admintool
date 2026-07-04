@@ -66,6 +66,8 @@ public partial class DriverManagerViewModel : ObservableObject
 
         var result = await _driverService.ScanDriversAsync(ct);
 
+        await CheckOemUpdaterAsync(ct);
+
         if (result.IsSuccess && result.Value != null)
         {
             _allDrivers = result.Value;
@@ -221,5 +223,67 @@ public partial class DriverManagerViewModel : ObservableObject
         }
         
         IsScanningUpdates = false;
+    }
+
+    [ObservableProperty]
+    private ObservableCollection<DriverInfoModel> _unsignedDrivers = new();
+
+    [ObservableProperty]
+    private bool _isScanningUnsigned;
+
+    [ObservableProperty]
+    private OemUpdaterInfoModel? _oemUpdater;
+
+    [RelayCommand]
+    public async Task ScanUnsignedDriversAsync(CancellationToken ct)
+    {
+        if (IsScanningUnsigned) return;
+        
+        IsScanningUnsigned = true;
+        UnsignedDrivers.Clear();
+
+        var result = await _driverService.ScanUnsignedDriversAsync(ct);
+
+        if (result.IsSuccess && result.Value != null)
+        {
+            UnsignedDrivers = new ObservableCollection<DriverInfoModel>(result.Value);
+        }
+        else
+        {
+            HasError = true;
+            ErrorMessage = result.ErrorMessage ?? "Failed to scan unsigned drivers.";
+        }
+
+        IsScanningUnsigned = false;
+    }
+
+    [RelayCommand]
+    public async Task CheckOemUpdaterAsync(CancellationToken ct)
+    {
+        var result = await _driverService.CheckOemUpdaterAsync(ct);
+        if (result.IsSuccess)
+        {
+            OemUpdater = result.Value;
+        }
+    }
+
+    [RelayCommand]
+    private void LaunchOemUpdater()
+    {
+        if (OemUpdater?.IsInstalled == true)
+        {
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = OemUpdater.ExecutablePath,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to launch OEM Updater");
+            }
+        }
     }
 }

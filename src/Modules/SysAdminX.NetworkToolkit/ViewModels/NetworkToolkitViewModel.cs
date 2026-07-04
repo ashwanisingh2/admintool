@@ -137,7 +137,10 @@ public partial class NetworkToolkitViewModel : ObservableObject
     private string _scannerTarget = "127.0.0.1";
 
     [ObservableProperty]
-    private string _scannerPorts = "21,22,80,443,3389";
+    private int _scannerStartPort = 1;
+
+    [ObservableProperty]
+    private int _scannerEndPort = 1000;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(StartPortScanCommand))]
@@ -154,81 +157,78 @@ public partial class NetworkToolkitViewModel : ObservableObject
         IsScanning = true;
         ScanResults.Clear();
 
-        var target = ScannerTarget;
-        var portsStr = ScannerPorts.Split(new[] { ',' }, System.StringSplitOptions.RemoveEmptyEntries);
-        var ports = new List<int>();
-
-        foreach (var p in portsStr)
+        var result = await _networkService.PortScanAsync(ScannerTarget, ScannerStartPort, ScannerEndPort, ct);
+        if (result.IsSuccess && result.Value != null)
         {
-            if (p.Contains("-"))
-            {
-                var parts = p.Split('-');
-                if (parts.Length == 2 && int.TryParse(parts[0], out int start) && int.TryParse(parts[1], out int end))
-                {
-                    for (int i = start; i <= end; i++) ports.Add(i);
-                }
-            }
-            else if (int.TryParse(p, out int port))
-            {
-                ports.Add(port);
-            }
-        }
-
-        ports = ports.Take(1000).Distinct().ToList();
-
-        var tasks = ports.Select(async port =>
-        {
-            var result = new PortScanResultModel { Port = port, Status = "Closed", Service = GetCommonServiceName(port) };
-            try
-            {
-                using var client = new System.Net.Sockets.TcpClient();
-                var connectTask = client.ConnectAsync(target, port);
-                if (await Task.WhenAny(connectTask, Task.Delay(1000, ct)) == connectTask && client.Connected)
-                {
-                    result.Status = "Open";
-                }
-            }
-            catch { }
-            return result;
-        });
-
-        int batchSize = 100;
-        for (int i = 0; i < ports.Count; i += batchSize)
-        {
-            var batch = tasks.Skip(i).Take(batchSize);
-            var results = await Task.WhenAll(batch);
-            foreach (var r in results)
+            foreach (var r in result.Value)
             {
                 ScanResults.Add(r);
             }
+        }
+        else
+        {
+            HasError = true;
+            ErrorMessage = result.ErrorMessage ?? "Port scan failed";
         }
 
         IsScanning = false;
     }
 
-    private string GetCommonServiceName(int port)
+    [ObservableProperty]
+    private string _wolMacAddress = string.Empty;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(SendWakeOnLanCommand))]
+    private bool _isSendingWol;
+
+    private bool CanSendWol() => !IsSendingWol && !string.IsNullOrWhiteSpace(WolMacAddress);
+
+    [RelayCommand(CanExecute = nameof(CanSendWol))]
+    public async Task SendWakeOnLanAsync(CancellationToken ct)
     {
-        return port switch
+        IsSendingWol = true;
+        var result = await _networkService.WakeOnLanAsync(WolMacAddress, ct);
+        if (!result.IsSuccess)
         {
-            20 => "FTP Data",
-            21 => "FTP Control",
-            22 => "SSH",
-            23 => "Telnet",
-            25 => "SMTP",
-            53 => "DNS",
-            80 => "HTTP",
-            110 => "POP3",
-            135 => "RPC",
-            139 => "NetBIOS",
-            143 => "IMAP",
-            443 => "HTTPS",
-            445 => "SMB",
-            1433 => "SQL Server",
-            3306 => "MySQL",
-            3389 => "RDP",
-            8080 => "HTTP Alternate",
-            _ => "Unknown"
-        };
+            HasError = true;
+            ErrorMessage = result.ErrorMessage ?? "Failed to send WOL packet.";
+        }
+        IsSendingWol = false;
+    }
+
+    [ObservableProperty]
+    private string _pingSweepBaseIP = "192.168.1.0";
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(StartPingSweepCommand))]
+    private bool _isPingSweeping;
+
+    [ObservableProperty]
+    private ObservableCollection<PingSweepResultModel> _pingSweepResults = new();
+
+    private bool CanStartPingSweep() => !IsPingSweeping && !string.IsNullOrWhiteSpace(PingSweepBaseIP);
+
+    [RelayCommand(CanExecute = nameof(CanStartPingSweep))]
+    public async Task StartPingSweepAsync(CancellationToken ct)
+    {
+        IsPingSweeping = true;
+        PingSweepResults.Clear();
+
+        var result = await _networkService.PingSweepAsync(PingSweepBaseIP, ct);
+        if (result.IsSuccess && result.Value != null)
+        {
+            foreach (var r in result.Value)
+            {
+                PingSweepResults.Add(r);
+            }
+        }
+        else
+        {
+            HasError = true;
+            ErrorMessage = result.ErrorMessage ?? "Ping sweep failed";
+        }
+
+        IsPingSweeping = false;
     }
 
     [ObservableProperty]

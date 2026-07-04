@@ -84,6 +84,14 @@
                             <TextBlock Text="Generate Battery Report" />
                         </StackPanel>
                     </ui:Button>
+                    <ui:Button Appearance="Secondary"
+                               Margin="0,0,8,0"
+                               Command="{Binding GenerateDetailedReportCommand}">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="DocumentBulletList24" Margin="0,0,8,0" />
+                            <TextBlock Text="Generate Detailed Battery Report" />
+                        </StackPanel>
+                    </ui:Button>
                     <ui:Button Appearance="Primary"
                                Command="{Binding RefreshCommand}">
                         <StackPanel Orientation="Horizontal">
