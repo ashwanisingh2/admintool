@@ -154,6 +154,24 @@ public class DeviceDetailsService : IDeviceDetailsService
                 {
                     model = model with { ConfiguredClockSpeed = speed };
                 }
+
+                if (string.IsNullOrEmpty(model.MemoryType))
+                {
+                    string memTypeVal = obj["MemoryType"]?.ToString() ?? "";
+                    if (int.TryParse(memTypeVal, out int typeCode) && typeCode > 0)
+                    {
+                        model = model with { MemoryType = typeCode switch { 20 => "DDR", 21 => "DDR2", 24 => "DDR3", 26 => "DDR4", 34 => "DDR5", _ => typeCode.ToString() } };
+                    }
+                }
+
+                if (string.IsNullOrEmpty(model.FormFactor))
+                {
+                    string formFactorVal = obj["FormFactor"]?.ToString() ?? "";
+                    if (int.TryParse(formFactorVal, out int ffCode) && ffCode > 0)
+                    {
+                        model = model with { FormFactor = ffCode switch { 8 => "DIMM", 12 => "SODIMM", _ => ffCode.ToString() } };
+                    }
+                }
             }
             
             model = model with { TotalCapacity = $"{(totalCapacity / (1024.0 * 1024 * 1024)):F1} GB" };

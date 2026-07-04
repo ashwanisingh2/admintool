@@ -35,7 +35,7 @@
 
         <ui:InfoBar 
             Grid.Row="1"
-            IsOpen="{Binding ErrorMessage, Converter={StaticResource BoolToVis}}"
+            IsOpen="{Binding HasError}"
             Message="{Binding ErrorMessage}"
             Severity="Error"
             Margin="0,0,0,16" />
@@ -83,7 +83,7 @@
         </ui:DataGrid>
 
         <!-- Bottom Action Bar (Context sensitive) -->
-        <ui:Card Grid.Row="3" Margin="0,16,0,0" IsEnabled="{Binding SelectedService, Converter={StaticResource BoolToVis}}">
+        <ui:Card Grid.Row="3" Margin="0,16,0,0" IsEnabled="{Binding HasSelection}">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />

@@ -105,6 +105,50 @@
                     </Grid>
                 </Border>
 
+                <!-- Antivirus Products -->
+                <TextBlock Text="Antivirus Products (WMI)" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,12" />
+                <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Padding="16" Margin="0,0,0,24">
+                    <ItemsControl ItemsSource="{Binding AntivirusProducts}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="30" />
+                                        <ColumnDefinition Width="200" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <ui:SymbolIcon Grid.Column="0" Symbol="ShieldCheckmark24" Foreground="{DynamicResource SystemFillColorSuccessBrush}" HorizontalAlignment="Left" />
+                                    <TextBlock Grid.Column="1" Text="{Binding DisplayName}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="State: " Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                        <TextBlock Text="{Binding ProductState}" />
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                        <ItemsControl.Style>
+                            <Style TargetType="ItemsControl">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding AntivirusProducts.Count}" Value="0">
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate>
+                                                    <TextBlock Text="No additional Antivirus products found." Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ItemsControl.Style>
+                    </ItemsControl>
+                </Border>
+
                 <!-- BitLocker -->
                 <TextBlock Text="BitLocker Drive Encryption" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,12" />
                 <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
@@ -170,6 +214,97 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
+                </Border>
+
+                <!-- UAC Settings -->
+                <TextBlock Text="User Account Control (UAC)" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,12" />
+                <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Padding="16" Margin="0,0,0,24">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="30" />
+                            <ColumnDefinition Width="200" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- EnableLUA -->
+                        <ui:SymbolIcon Grid.Row="0" Grid.Column="0" DataContext="{Binding UacStatus.IsEnabled}" Style="{StaticResource StatusIconStyle}" HorizontalAlignment="Left"/>
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="UAC Enabled (EnableLUA)" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding UacStatus.IsEnabled}" VerticalAlignment="Center" Margin="0,0,0,12"/>
+
+                        <!-- Consent Prompt -->
+                        <ui:SymbolIcon Grid.Row="1" Grid.Column="0" Symbol="PersonLock24" Foreground="{DynamicResource SystemFillColorNeutralBrush}" HorizontalAlignment="Left" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="Admin Prompt Behavior" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding UacStatus.ConsentPromptBehavior}" VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <!-- Windows Update -->
+                <TextBlock Text="Windows Update" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,12" />
+                <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Padding="16" Margin="0,0,0,24">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="30" />
+                            <ColumnDefinition Width="200" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <ui:SymbolIcon Grid.Row="0" Grid.Column="0" DataContext="{Binding WindowsUpdateStatus.ServiceEnabled}" Style="{StaticResource StatusIconStyle}" HorizontalAlignment="Left"/>
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="Service Enabled" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding WindowsUpdateStatus.ServiceEnabled}" VerticalAlignment="Center" Margin="0,0,0,12"/>
+
+                        <ui:SymbolIcon Grid.Row="1" Grid.Column="0" Symbol="Search24" Foreground="{DynamicResource SystemFillColorNeutralBrush}" HorizontalAlignment="Left" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="Last Search Success" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding WindowsUpdateStatus.LastSearchSuccessDate, StringFormat='{}{0:g}'}" VerticalAlignment="Center" Margin="0,0,0,12"/>
+
+                        <ui:SymbolIcon Grid.Row="2" Grid.Column="0" Symbol="ArrowDownload24" Foreground="{DynamicResource SystemFillColorNeutralBrush}" HorizontalAlignment="Left" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="Last Install Success" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding WindowsUpdateStatus.LastInstallationSuccessDate, StringFormat='{}{0:g}'}" VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <!-- Secure Boot -->
+                <TextBlock Text="Secure Boot" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,12" />
+                <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Padding="16" Margin="0,0,0,24">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="30" />
+                            <ColumnDefinition Width="200" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <ui:SymbolIcon Grid.Row="0" Grid.Column="0" DataContext="{Binding SecureBootStatus.IsSupported}" Style="{StaticResource StatusIconStyle}" HorizontalAlignment="Left"/>
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="Is Supported" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding SecureBootStatus.IsSupported}" VerticalAlignment="Center" Margin="0,0,0,12"/>
+
+                        <ui:SymbolIcon Grid.Row="1" Grid.Column="0" DataContext="{Binding SecureBootStatus.IsEnabled}" Style="{StaticResource StatusIconStyle}" HorizontalAlignment="Left"/>
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="Is Enabled" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding SecureBootStatus.IsEnabled}" VerticalAlignment="Center"/>
+                    </Grid>
                 </Border>
 
             </StackPanel>

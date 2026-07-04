@@ -14,5 +14,6 @@ public class PortableToolModel
     public string Description { get; set; } = string.Empty;
     public string ExecutableName { get; set; } = string.Empty;
     public string Category { get; set; } = string.Empty;
+    public string DownloadUrl { get; set; } = string.Empty;
     public bool IsDownloaded { get; set; }
 }

@@ -47,6 +47,46 @@ public class SystemCleanupService : ISystemCleanupService
                         Description = "Files in the Windows Temp folder.",
                         SizeBytes = GetDirectorySize(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Temp")),
                         IsSelected = true
+                    },
+                    new()
+                    {
+                        Id = "windows_update",
+                        Name = "Windows Update Cache",
+                        Description = "Temporary files created by Windows Update.",
+                        SizeBytes = GetDirectorySize(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "SoftwareDistribution", "Download")),
+                        IsSelected = false
+                    },
+                    new()
+                    {
+                        Id = "prefetch",
+                        Name = "Prefetch Cache",
+                        Description = "Files used to speed up application launching.",
+                        SizeBytes = GetDirectorySize(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Prefetch")),
+                        IsSelected = false
+                    },
+                    new()
+                    {
+                        Id = "dns_cache",
+                        Name = "DNS Cache",
+                        Description = "Flushes the DNS resolver cache.",
+                        SizeBytes = 0,
+                        IsSelected = false
+                    },
+                    new()
+                    {
+                        Id = "chrome_cache",
+                        Name = "Google Chrome Cache",
+                        Description = "Temporary internet files for Chrome.",
+                        SizeBytes = GetDirectorySize(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Google", "Chrome", "User Data", "Default", "Cache", "Cache_Data")),
+                        IsSelected = false
+                    },
+                    new()
+                    {
+                        Id = "edge_cache",
+                        Name = "Microsoft Edge Cache",
+                        Description = "Temporary internet files for Edge.",
+                        SizeBytes = GetDirectorySize(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Microsoft", "Edge", "User Data", "Default", "Cache", "Cache_Data")),
+                        IsSelected = false
                     }
                 };
                 return Result<IEnumerable<CleanupItemModel>>.Success(items);
@@ -79,6 +119,40 @@ public class SystemCleanupService : ISystemCleanupService
                     else if (id == "windows_temp")
                     {
                         CleanDirectory(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Temp"));
+                    }
+                    else if (id == "windows_update")
+                    {
+                        CleanDirectory(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "SoftwareDistribution", "Download"));
+                    }
+                    else if (id == "prefetch")
+                    {
+                        CleanDirectory(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Prefetch"));
+                    }
+                    else if (id == "dns_cache")
+                    {
+                        try 
+                        {
+                            var process = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                            {
+                                FileName = "ipconfig",
+                                Arguments = "/flushdns",
+                                UseShellExecute = false,
+                                CreateNoWindow = true
+                            });
+                            process?.WaitForExit();
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Failed to flush DNS.");
+                        }
+                    }
+                    else if (id == "chrome_cache")
+                    {
+                        CleanDirectory(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Google", "Chrome", "User Data", "Default", "Cache", "Cache_Data"));
+                    }
+                    else if (id == "edge_cache")
+                    {
+                        CleanDirectory(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Microsoft", "Edge", "User Data", "Default", "Cache", "Cache_Data"));
                     }
                 }
                 return Result<bool>.Success(true);

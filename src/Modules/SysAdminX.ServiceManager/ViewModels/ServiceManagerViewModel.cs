@@ -30,9 +30,11 @@ public partial class ServiceManagerViewModel : ObservableObject
     private bool _isLoading;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasError))]
     private string _errorMessage = string.Empty;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasSelection))]
     private WindowsServiceModel? _selectedService;
 
     [ObservableProperty]
@@ -40,6 +42,9 @@ public partial class ServiceManagerViewModel : ObservableObject
 
     public ObservableCollection<WindowsServiceModel> Services { get; } = new();
     public ObservableCollection<WindowsServiceModel> FilteredServices { get; } = new();
+
+    public bool HasError => !string.IsNullOrEmpty(ErrorMessage);
+    public bool HasSelection => SelectedService != null;
 
     public ServiceManagerViewModel(
         ILogger<ServiceManagerViewModel> logger,
@@ -149,13 +154,13 @@ public partial class ServiceManagerViewModel : ObservableObject
     {
         FilteredServices.Clear();
         
-        var query = SearchQuery.ToLowerInvariant();
+        var query = SearchQuery?.ToLowerInvariant() ?? string.Empty;
         var filtered = string.IsNullOrWhiteSpace(query)
             ? Services
             : Services.Where(s => 
-                s.Name.ToLowerInvariant().Contains(query) || 
-                s.DisplayName.ToLowerInvariant().Contains(query) ||
-                s.Description.ToLowerInvariant().Contains(query));
+                (s.Name?.ToLowerInvariant().Contains(query) == true) || 
+                (s.DisplayName?.ToLowerInvariant().Contains(query) == true) ||
+                (s.Description?.ToLowerInvariant().Contains(query) == true));
 
         foreach (var item in filtered)
         {

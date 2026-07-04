@@ -20,4 +20,8 @@ public interface ISecurityService
     Task<DefenderStatusModel> GetDefenderStatusAsync(CancellationToken ct = default);
     Task<List<BitLockerStatusModel>> GetBitLockerStatusAsync(CancellationToken ct = default);
     Task<List<FirewallProfileModel>> GetFirewallProfilesAsync(CancellationToken ct = default);
+    Task<List<AntivirusProductModel>> GetAntivirusProductsAsync(CancellationToken ct = default);
+    Task<UacStatusModel> GetUacStatusAsync(CancellationToken ct = default);
+    Task<WindowsUpdateStatusModel> GetWindowsUpdateStatusAsync(CancellationToken ct = default);
+    Task<SecureBootStatusModel> GetSecureBootStatusAsync(CancellationToken ct = default);
 }

@@ -248,7 +248,7 @@ public class TroubleshootingService : ITroubleshootingService
                       "start explorer.exe";
         
         // This is safe to run without wait for the whole thing (explorer restart), but we'll wait.
-        var result = await _processService.ExecuteAsync("cmd.exe", $"/c {cmds}", false, ct);
+        var result = await _processService.ExecuteAsync("cmd.exe", $"/c {cmds}", true, ct);
         
         return Result<TroubleshootingActionModel>.Success(new TroubleshootingActionModel
         {

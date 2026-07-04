@@ -43,3 +43,40 @@ public class FirewallProfileModel
     public string DefaultInboundAction { get; set; } = string.Empty;
     public string DefaultOutboundAction { get; set; } = string.Empty;
 }
+
+/// <summary>
+/// Status of Antivirus products registered in WMI SecurityCenter2.
+/// </summary>
+public class AntivirusProductModel
+{
+    public string DisplayName { get; set; } = string.Empty;
+    public string ProductState { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// UAC Settings status.
+/// </summary>
+public class UacStatusModel
+{
+    public bool IsEnabled { get; set; }
+    public string ConsentPromptBehavior { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Windows Update service status.
+/// </summary>
+public class WindowsUpdateStatusModel
+{
+    public bool ServiceEnabled { get; set; }
+    public DateTime? LastSearchSuccessDate { get; set; }
+    public DateTime? LastInstallationSuccessDate { get; set; }
+}
+
+/// <summary>
+/// Secure Boot status.
+/// </summary>
+public class SecureBootStatusModel
+{
+    public bool IsSupported { get; set; }
+    public bool IsEnabled { get; set; }
+}

@@ -34,6 +34,18 @@ public partial class SecurityCenterViewModel : ObservableObject
     private ObservableCollection<FirewallProfileModel> _firewallProfiles = new();
 
     [ObservableProperty]
+    private ObservableCollection<AntivirusProductModel> _antivirusProducts = new();
+
+    [ObservableProperty]
+    private UacStatusModel _uacStatus = new();
+
+    [ObservableProperty]
+    private WindowsUpdateStatusModel _windowsUpdateStatus = new();
+
+    [ObservableProperty]
+    private SecureBootStatusModel _secureBootStatus = new();
+
+    [ObservableProperty]
     private bool _isLoading;
 
     public SecurityCenterViewModel(ILogger<SecurityCenterViewModel> logger, ISecurityService securityService)
@@ -65,6 +77,17 @@ public partial class SecurityCenterViewModel : ObservableObject
             {
                 FirewallProfiles.Add(p);
             }
+            
+            var avProducts = await _securityService.GetAntivirusProductsAsync();
+            AntivirusProducts.Clear();
+            foreach (var av in avProducts)
+            {
+                AntivirusProducts.Add(av);
+            }
+            
+            UacStatus = await _securityService.GetUacStatusAsync();
+            WindowsUpdateStatus = await _securityService.GetWindowsUpdateStatusAsync();
+            SecureBootStatus = await _securityService.GetSecureBootStatusAsync();
         }
         finally
         {

@@ -294,6 +294,12 @@
 
                                 <TextBlock Grid.Row="1" Grid.Column="0" Text="Speed:" Style="{StaticResource LabelText}" />
                                 <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding DeviceDetails.Ram.ConfiguredClockSpeed, StringFormat='{}{0} MHz'}" Style="{StaticResource ValueText}" />
+
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Memory Type:" Style="{StaticResource LabelText}" />
+                                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding DeviceDetails.Ram.MemoryType}" Style="{StaticResource ValueText}" />
+
+                                <TextBlock Grid.Row="3" Grid.Column="0" Text="Form Factor:" Style="{StaticResource LabelText}" />
+                                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding DeviceDetails.Ram.FormFactor}" Style="{StaticResource ValueText}" />
                             </Grid>
                         </StackPanel>
                     </Border>
@@ -399,7 +405,7 @@
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <ui:SymbolIcon Symbol="Storage24" FontSize="20" Margin="0,0,12,16" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                                <ui:SymbolIcon Symbol="Server24" FontSize="20" Margin="0,0,12,16" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
                                 <TextBlock Grid.Column="1" Text="STORAGE" Style="{StaticResource SectionHeader}" />
                             </Grid>
                             
@@ -412,6 +418,7 @@
                                                 <ColumnDefinition Width="*" />
                                             </Grid.ColumnDefinitions>
                                             <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto" />
                                                 <RowDefinition Height="Auto" />
                                                 <RowDefinition Height="Auto" />
                                                 <RowDefinition Height="Auto" />
@@ -435,7 +442,10 @@
                                                 <TextBlock Text="{Binding TotalSize}" Style="{StaticResource ValueText}" />
                                             </StackPanel>
                                             
-                                            <ProgressBar Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Value="{Binding UsagePercent}" Margin="0,4,0,8" />
+                                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Type:" Style="{StaticResource LabelText}" />
+                                            <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding DriveType}" Style="{StaticResource ValueText}" />
+
+                                            <ProgressBar Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" Value="{Binding UsagePercent}" Margin="0,4,0,8" />
                                         </Grid>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
@@ -451,7 +461,7 @@
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <ui:SymbolIcon Symbol="Password24" FontSize="20" Margin="0,0,12,16" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                                <ui:SymbolIcon Symbol="Shield24" FontSize="20" Margin="0,0,12,16" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
                                 <TextBlock Grid.Column="1" Text="ACTIVATION STATUS" Style="{StaticResource SectionHeader}" />
                             </Grid>
                             
