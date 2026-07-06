@@ -8,6 +8,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
@@ -25,7 +26,7 @@ public class SoftwareManagerService : ISoftwareManagerService
         _logger = logger;
     }
 
-    public async Task<Result<IEnumerable<SoftwareItemModel>>> GetInstalledSoftwareAsync()
+    public async Task<Result<IEnumerable<SoftwareItemModel>>> GetInstalledSoftwareAsync(CancellationToken ct = default)
     {
         return await Task.Run(() =>
         {
@@ -74,7 +75,7 @@ public class SoftwareManagerService : ISoftwareManagerService
         });
     }
 
-    public async Task<Result<bool>> UninstallSoftwareAsync(string uninstallString, string appName)
+    public async Task<Result<bool>> UninstallSoftwareAsync(string uninstallString, string appName, CancellationToken ct = default)
     {
         return await Task.Run(() =>
         {
@@ -130,7 +131,7 @@ public class SoftwareManagerService : ISoftwareManagerService
         });
     }
 
-    public async Task<Result<bool>> InstallAppViaWingetAsync(string wingetId)
+    public async Task<Result<bool>> InstallAppViaWingetAsync(string wingetId, CancellationToken ct = default)
     {
         return await Task.Run(() =>
         {

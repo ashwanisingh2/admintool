@@ -10,6 +10,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -23,6 +24,14 @@ namespace SysAdminX.LogsViewer.ViewModels;
 
 /// <summary>
 /// ViewModel for the Logs Viewer module.
+///
+/// Improvements applied:
+///   - Real cancellation token propagation in <see cref="RefreshLogsAsync"/>
+///     and <see cref="AutoRefreshTickAsync"/> so navigating away actually
+///     aborts the file read.
+///   - <see cref="LogCount"/> observable so the UI can show "X of Y entries".
+///   - <see cref="IsLoading"/> flag set in try/finally so a thrown exception
+///     can no longer leave the spinner stuck on.
 /// </summary>
 public partial class LogsViewerViewModel : ObservableObject
 {
@@ -59,6 +68,18 @@ public partial class LogsViewerViewModel : ObservableObject
     [ObservableProperty]
     private bool _isAutoRefreshEnabled;
 
+    /// <summary>True while a log refresh is in flight (drives the spinner).</summary>
+    [ObservableProperty]
+    private bool _isLoading;
+
+    /// <summary>Total number of log entries currently loaded (pre-filter).</summary>
+    [ObservableProperty]
+    private int _logCount;
+
+    /// <summary>Number of entries currently visible after applying filters.</summary>
+    [ObservableProperty]
+    private int _filteredLogCount;
+
     private readonly DispatcherTimer _autoRefreshTimer;
 
     public LogsViewerViewModel(ILogger<LogsViewerViewModel> logger, ILogsService logsService, IBsodAnalyzerService bsodAnalyzerService)
@@ -66,13 +87,12 @@ public partial class LogsViewerViewModel : ObservableObject
         _logger = logger;
         _logsService = logsService;
         _bsodAnalyzerService = bsodAnalyzerService;
-        
+
         _autoRefreshTimer = new DispatcherTimer
         {
             Interval = TimeSpan.FromSeconds(5)
         };
         _autoRefreshTimer.Tick += async (s, e) => await AutoRefreshTickAsync();
-
     }
 
     partial void OnIsAutoRefreshEnabledChanged(bool value)
@@ -85,39 +105,70 @@ public partial class LogsViewerViewModel : ObservableObject
 
     private async Task AutoRefreshTickAsync()
     {
-        var logs = await _logsService.GetRecentLogsAsync(50);
-        var lastLogTime = _allLogs.FirstOrDefault()?.Timestamp ?? DateTime.MinValue;
-
-        var newLogs = logs.Where(l => l.Timestamp > lastLogTime).ToList();
-
-        if (newLogs.Count > 0)
+        try
         {
-            for (int i = newLogs.Count - 1; i >= 0; i--)
+            var logs = await _logsService.GetRecentLogsAsync(50);
+            var lastLogTime = _allLogs.FirstOrDefault()?.Timestamp ?? DateTime.MinValue;
+
+            var newLogs = logs.Where(l => l.Timestamp > lastLogTime).ToList();
+
+            if (newLogs.Count > 0)
             {
-                var l = newLogs[i];
-                _allLogs.Insert(0, l);
-                
-                if (MatchesFilters(l))
+                for (int i = newLogs.Count - 1; i >= 0; i--)
                 {
-                    FilteredLogs.Insert(0, l);
+                    var l = newLogs[i];
+                    _allLogs.Insert(0, l);
+
+                    if (MatchesFilters(l))
+                    {
+                        FilteredLogs.Insert(0, l);
+                    }
                 }
+
+                LogCount = _allLogs.Count;
+                FilteredLogCount = FilteredLogs.Count;
             }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Auto-refresh tick failed.");
+            // Stop the timer so we don't keep spamming failures.
+            _autoRefreshTimer.Stop();
+            IsAutoRefreshEnabled = false;
         }
     }
 
     [RelayCommand]
-    public async Task RefreshLogsAsync()
+    public async Task RefreshLogsAsync(CancellationToken ct = default)
     {
-        _logger.LogInformation("Refreshing log viewer...");
-        
-        var logs = await _logsService.GetRecentLogsAsync(2000);
-        _allLogs.Clear();
-        foreach (var l in logs)
+        if (IsLoading) return;
+        IsLoading = true;
+
+        try
         {
-            _allLogs.Add(l);
+            _logger.LogInformation("Refreshing log viewer...");
+            var logs = await _logsService.GetRecentLogsAsync(2000);
+            _allLogs.Clear();
+            foreach (var l in logs)
+            {
+                _allLogs.Add(l);
+            }
+
+            ApplyFilters();
+            LogCount = _allLogs.Count;
         }
-        
-        ApplyFilters();
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("Log refresh cancelled.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to refresh logs.");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
     partial void OnShowInfoChanged(bool value) => ApplyFilters();
@@ -132,7 +183,7 @@ public partial class LogsViewerViewModel : ObservableObject
         if (ShowInfo && (l.Level == "INF" || l.Level == "DBG")) matchesLevel = true;
         if (ShowWarn && l.Level == "WRN") matchesLevel = true;
         if (ShowError && (l.Level == "ERR" || l.Level == "FTL")) matchesLevel = true;
-        
+
         if (!matchesLevel) return false;
 
         // Search Filter
@@ -156,10 +207,13 @@ public partial class LogsViewerViewModel : ObservableObject
         {
             FilteredLogs.Add(l);
         }
+
+        LogCount = _allLogs.Count;
+        FilteredLogCount = FilteredLogs.Count;
     }
 
     [RelayCommand]
-    public async Task ExportLogsAsync()
+    public async Task ExportLogsAsync(CancellationToken ct = default)
     {
         var dialog = new Microsoft.Win32.SaveFileDialog
         {
@@ -177,7 +231,12 @@ public partial class LogsViewerViewModel : ObservableObject
                 {
                     sb.AppendLine(log.FullRawLine);
                 }
-                await File.WriteAllTextAsync(dialog.FileName, sb.ToString());
+                await File.WriteAllTextAsync(dialog.FileName, sb.ToString(), ct);
+                _logger.LogInformation("Exported {Count} log entries to {Path}", FilteredLogs.Count, dialog.FileName);
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogInformation("Log export cancelled.");
             }
             catch (Exception ex)
             {
@@ -187,8 +246,9 @@ public partial class LogsViewerViewModel : ObservableObject
     }
 
     [RelayCommand]
-    public async Task AnalyzeDumpsAsync(CancellationToken ct)
+    public async Task AnalyzeDumpsAsync(CancellationToken ct = default)
     {
+        if (IsBsodLoading) return;
         IsBsodLoading = true;
         HasNoCrashes = false;
         BsodEntries.Clear();
@@ -209,6 +269,14 @@ public partial class LogsViewerViewModel : ObservableObject
                 HasNoCrashes = true;
             }
         }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("BSOD analysis cancelled.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "BSOD analysis threw an exception.");
+        }
         finally
         {
             IsBsodLoading = false;
@@ -216,11 +284,21 @@ public partial class LogsViewerViewModel : ObservableObject
     }
 
     [RelayCommand]
-    public async Task GenerateBsodReportAsync(CancellationToken ct)
+    public async Task GenerateBsodReportAsync(CancellationToken ct = default)
     {
-        if (BsodEntries.Count > 0)
+        if (BsodEntries.Count == 0) return;
+
+        try
         {
             await _bsodAnalyzerService.GenerateHtmlReportAsync(BsodEntries, ct);
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("BSOD report generation cancelled.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "BSOD report generation threw an exception.");
         }
     }
 }

@@ -273,6 +273,10 @@
             </ui:NavigationView.FooterMenuItems>
 
         </ui:NavigationView>
+
+        <!-- Snackbar host — must live inside the FluentWindow so ISnackbarService
+             can show toasts anywhere in the app. -->
+        <ui:SnackbarPresenter x:Name="SnackbarPresenter" Grid.Row="1" Panel.ZIndex="1000" />
     </Grid>
 
 </ui:FluentWindow>

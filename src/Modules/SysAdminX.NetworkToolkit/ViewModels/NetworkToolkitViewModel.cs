@@ -248,19 +248,30 @@ public partial class NetworkToolkitViewModel : ObservableObject
 
         try
         {
-            var p = new System.Diagnostics.Process();
-            p.StartInfo.FileName = "netsh";
-            p.StartInfo.Arguments = "wlan show networks mode=bssid";
-            p.StartInfo.UseShellExecute = false;
-            p.StartInfo.RedirectStandardOutput = true;
-            p.StartInfo.CreateNoWindow = true;
+            // Spawn netsh on a thread-pool thread so we don't block the UI.
+            // Use a child CancellationTokenSource tied to the command's CT
+            // so that navigation away from the page aborts the scan.
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            linkedCts.CancelAfter(TimeSpan.FromSeconds(15));
+
+            var startInfo = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "netsh",
+                Arguments = "wlan show networks mode=bssid",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                CreateNoWindow = true,
+                StandardOutputEncoding = System.Text.Encoding.Unicode
+            };
+
+            using var p = new System.Diagnostics.Process { StartInfo = startInfo };
             p.Start();
 
-            string output = await p.StandardOutput.ReadToEndAsync(ct);
-            await p.WaitForExitAsync(ct);
+            string output = await p.StandardOutput.ReadToEndAsync(linkedCts.Token);
+            await p.WaitForExitAsync(linkedCts.Token);
 
             var lines = output.Split(new[] { '\r', '\n' }, System.StringSplitOptions.RemoveEmptyEntries);
-            WiFiNetworkModel currentNetwork = null;
+            WiFiNetworkModel? currentNetwork = null;
 
             foreach (var line in lines)
             {
@@ -319,11 +330,19 @@ public partial class NetworkToolkitViewModel : ObservableObject
                 WiFiNetworks.Add(currentNetwork);
             }
         }
+        catch (OperationCanceledException)
+        {
+            _logger.LogWarning("WiFi scan was cancelled or timed out.");
+        }
         catch (System.Exception ex)
         {
             _logger.LogError(ex, "Failed to scan WiFi");
+            HasError = true;
+            ErrorMessage = "WiFi scan failed: " + ex.Message;
         }
-
-        IsScanningWiFi = false;
+        finally
+        {
+            IsScanningWiFi = false;
+        }
     }
 }
