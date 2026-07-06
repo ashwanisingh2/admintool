@@ -5,6 +5,7 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
+using System.Threading;
 using System.Threading.Tasks;
 using SysAdminX.Core.Models;
 
@@ -15,6 +16,9 @@ namespace SysAdminX.Settings.Services;
 /// </summary>
 public interface ISettingsService
 {
-    Task<AppConfigModel> LoadSettingsAsync();
-    Task SaveSettingsAsync(AppConfigModel config);
+    /// <summary>Loads the current app configuration from disk.</summary>
+    Task<AppConfigModel> LoadSettingsAsync(CancellationToken ct = default);
+
+    /// <summary>Saves the given app configuration to disk.</summary>
+    Task SaveSettingsAsync(AppConfigModel config, CancellationToken ct = default);
 }

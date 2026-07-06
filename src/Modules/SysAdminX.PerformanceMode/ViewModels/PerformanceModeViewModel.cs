@@ -1,24 +1,45 @@
+using System;
 using System.Collections.ObjectModel;
+using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Logging;
+using SysAdminX.Core.Interfaces;
 using SysAdminX.PerformanceMode.Models;
 using SysAdminX.PerformanceMode.Services;
 
 namespace SysAdminX.PerformanceMode.ViewModels;
 
+/// <summary>
+/// ViewModel for the Performance Mode module.
+///
+/// Improvements applied:
+///   - All async commands wrapped in try/finally with toast feedback.
+///   - Constructor no longer fires off a fire-and-forget load — the view's
+///     Loaded handler now triggers the initial refresh.
+/// </summary>
 public partial class PerformanceModeViewModel : ObservableObject
 {
     private readonly IPerformanceModeService _service;
+    private readonly IToastNotificationService _toastService;
+    private readonly ILogger<PerformanceModeViewModel> _logger;
 
     [ObservableProperty]
     private ObservableCollection<PerformanceProfile> _profiles = new();
 
-    public PerformanceModeViewModel(IPerformanceModeService service)
+    [ObservableProperty]
+    private bool _isApplying;
+
+    public PerformanceModeViewModel(
+        IPerformanceModeService service,
+        IToastNotificationService toastService,
+        ILogger<PerformanceModeViewModel> logger)
     {
-        _service = service;
+        _service = service ?? throw new ArgumentNullException(nameof(service));
+        _toastService = toastService ?? throw new ArgumentNullException(nameof(toastService));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         InitializeProfiles();
-        _ = LoadCurrentProfileAsync();
     }
 
     private void InitializeProfiles()
@@ -49,25 +70,62 @@ public partial class PerformanceModeViewModel : ObservableObject
         };
     }
 
-    private async Task LoadCurrentProfileAsync()
+    [RelayCommand]
+    public async Task LoadCurrentProfileAsync(CancellationToken ct = default)
     {
-        var result = await _service.GetCurrentProfileAsync();
-        if (result.IsSuccess)
+        try
         {
-            foreach (var profile in Profiles)
+            var result = await _service.GetCurrentProfileAsync(ct);
+            if (result.IsSuccess)
             {
-                profile.IsActive = profile.Id == result.Value;
+                foreach (var profile in Profiles)
+                {
+                    profile.IsActive = profile.Id == result.Value;
+                }
             }
+            else
+            {
+                _logger.LogWarning("Failed to load current performance profile: {Error}", result.ErrorMessage);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "LoadCurrentProfile threw an exception.");
         }
     }
 
     [RelayCommand]
-    private async Task ApplyProfileAsync(string profileId)
+    public async Task ApplyProfileAsync(string profileId, CancellationToken ct = default)
     {
-        var result = await _service.ApplyProfileAsync(profileId);
-        if (result.IsSuccess)
+        if (string.IsNullOrEmpty(profileId) || IsApplying) return;
+
+        IsApplying = true;
+        try
         {
-            await LoadCurrentProfileAsync();
+            var result = await _service.ApplyProfileAsync(profileId, ct);
+            if (result.IsSuccess)
+            {
+                _toastService.ShowSuccess("Performance profile applied",
+                    $"Profile '{profileId}' was applied.");
+                await LoadCurrentProfileAsync(ct);
+            }
+            else
+            {
+                _toastService.ShowError("Failed to apply profile", result.ErrorMessage ?? "Unknown error.");
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("Apply profile cancelled.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Apply profile threw an exception.");
+            _toastService.ShowError("Failed to apply profile", ex.Message);
+        }
+        finally
+        {
+            IsApplying = false;
         }
     }
 }
