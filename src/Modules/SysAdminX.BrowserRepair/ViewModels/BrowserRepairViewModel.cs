@@ -4,14 +4,28 @@ using System.Threading.Tasks;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Logging;
 using SysAdminX.Core.Interfaces;
 using SysAdminX.Core.Models;
 
 namespace SysAdminX.BrowserRepair.ViewModels;
 
+/// <summary>
+/// Per-browser view model used by the Browser Repair module.
+///
+/// Improvements applied:
+///   - All three async operations (ClearCache, Reset, ReRegister) wrapped in
+///     try/finally so an exception can no longer leave IsProcessing stuck on.
+///   - Modal MessageBox calls replaced with toast notifications.
+///   - The Reset confirmation dialog stays as a MessageBox because it's a
+///     destructive confirmation — that genuinely needs to block.
+/// </summary>
 public partial class BrowserViewModel : ObservableObject
 {
     private readonly IBrowserRepairService _service;
+    private readonly IToastNotificationService _toastService;
+    private readonly ILogger<BrowserViewModel> _logger;
+
     public string Id { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string Icon { get; set; } = string.Empty;
@@ -30,9 +44,15 @@ public partial class BrowserViewModel : ObservableObject
     public IAsyncRelayCommand ResetCommand { get; }
     public IAsyncRelayCommand ReRegisterCommand { get; }
 
-    public BrowserViewModel(BrowserRepairModel model, IBrowserRepairService service)
+    public BrowserViewModel(
+        BrowserRepairModel model,
+        IBrowserRepairService service,
+        IToastNotificationService toastService,
+        ILogger<BrowserViewModel> logger)
     {
         _service = service;
+        _toastService = toastService;
+        _logger = logger;
         Id = model.Id;
         Name = model.Name;
         Icon = model.Icon;
@@ -61,70 +81,126 @@ public partial class BrowserViewModel : ObservableObject
     {
         IsProcessing = true;
         NotifyCommands();
-        var result = await _service.ClearCacheAsync(Id, CancellationToken.None);
-        if (result.IsSuccess)
+        try
         {
-            CacheSize = 0;
-            MessageBox.Show($"{Name} cache cleared successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            var result = await _service.ClearCacheAsync(Id, CancellationToken.None);
+            if (result.IsSuccess)
+            {
+                CacheSize = 0;
+                _toastService.ShowSuccess($"{Name} cache cleared", "Cache was cleared successfully.");
+            }
+            else
+            {
+                _toastService.ShowError($"Failed to clear {Name} cache", result.ErrorMessage ?? "Unknown error.");
+            }
         }
-        else
+        catch (System.Exception ex)
         {
-            MessageBox.Show($"Failed to clear cache: {result.ErrorMessage}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            _logger.LogError(ex, "ClearCache threw an exception for {Browser}", Name);
+            _toastService.ShowError($"Failed to clear {Name} cache", ex.Message);
         }
-        IsProcessing = false;
-        NotifyCommands();
+        finally
+        {
+            IsProcessing = false;
+            NotifyCommands();
+        }
     }
 
     private async Task ResetAsync()
     {
-        if (MessageBox.Show($"Are you sure you want to reset {Name}? This will delete preferences and local state.", "Confirm Reset", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+        // Destructive confirmation — this stays as a modal MessageBox because
+        // we genuinely need the user's yes/no answer before proceeding.
+        if (MessageBox.Show(
+            $"Are you sure you want to reset {Name}? This will delete preferences and local state.",
+            "Confirm Reset",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning) != MessageBoxResult.Yes)
+        {
             return;
+        }
 
         IsProcessing = true;
         NotifyCommands();
-        var result = await _service.ResetBrowserAsync(Id, CancellationToken.None);
-        if (result.IsSuccess)
+        try
         {
-            MessageBox.Show($"{Name} reset successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            var result = await _service.ResetBrowserAsync(Id, CancellationToken.None);
+            if (result.IsSuccess)
+            {
+                _toastService.ShowSuccess($"{Name} reset", "Browser was reset successfully.");
+            }
+            else
+            {
+                _toastService.ShowError($"Failed to reset {Name}", result.ErrorMessage ?? "Unknown error.");
+            }
         }
-        else
+        catch (System.Exception ex)
         {
-            MessageBox.Show($"Failed to reset browser: {result.ErrorMessage}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            _logger.LogError(ex, "ResetBrowser threw an exception for {Browser}", Name);
+            _toastService.ShowError($"Failed to reset {Name}", ex.Message);
         }
-        IsProcessing = false;
-        NotifyCommands();
+        finally
+        {
+            IsProcessing = false;
+            NotifyCommands();
+        }
     }
 
     private async Task ReRegisterAsync()
     {
         IsProcessing = true;
         NotifyCommands();
-        var result = await _service.ReRegisterBrowserAsync(Id, CancellationToken.None);
-        if (result.IsSuccess)
+        try
         {
-            MessageBox.Show($"{Name} re-registered successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            var result = await _service.ReRegisterBrowserAsync(Id, CancellationToken.None);
+            if (result.IsSuccess)
+            {
+                _toastService.ShowSuccess($"{Name} re-registered", "Browser was re-registered successfully.");
+            }
+            else
+            {
+                _toastService.ShowError($"Failed to re-register {Name}", result.ErrorMessage ?? "Unknown error.");
+            }
         }
-        else
+        catch (System.Exception ex)
         {
-            MessageBox.Show($"Failed to re-register browser: {result.ErrorMessage}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            _logger.LogError(ex, "ReRegisterBrowser threw an exception for {Browser}", Name);
+            _toastService.ShowError($"Failed to re-register {Name}", ex.Message);
         }
-        IsProcessing = false;
-        NotifyCommands();
+        finally
+        {
+            IsProcessing = false;
+            NotifyCommands();
+        }
     }
 }
 
+/// <summary>
+/// Top-level view model for the Browser Repair module.
+///
+/// Improvements applied:
+///   - LoadBrowsersAsync wrapped in try/finally so an exception can no longer
+///     leave IsLoading stuck on.
+///   - IToastNotificationService injected.
+/// </summary>
 public partial class BrowserRepairViewModel : ObservableObject
 {
     private readonly IBrowserRepairService _service;
+    private readonly IToastNotificationService _toastService;
+    private readonly ILogger<BrowserRepairViewModel> _logger;
 
     public ObservableCollection<BrowserViewModel> Browsers { get; } = new();
 
     [ObservableProperty]
     private bool _isLoading;
 
-    public BrowserRepairViewModel(IBrowserRepairService service)
+    public BrowserRepairViewModel(
+        IBrowserRepairService service,
+        IToastNotificationService toastService,
+        ILogger<BrowserRepairViewModel> logger)
     {
         _service = service;
+        _toastService = toastService;
+        _logger = logger;
         LoadBrowsersCommand = new AsyncRelayCommand(LoadBrowsersAsync);
     }
 
@@ -132,16 +208,32 @@ public partial class BrowserRepairViewModel : ObservableObject
 
     private async Task LoadBrowsersAsync()
     {
+        if (IsLoading) return;
         IsLoading = true;
-        var result = await _service.GetBrowsersAsync(CancellationToken.None);
-        if (result.IsSuccess)
+        try
         {
-            Browsers.Clear();
-            foreach (var b in result.Value)
+            var result = await _service.GetBrowsersAsync(CancellationToken.None);
+            if (result.IsSuccess && result.Value != null)
             {
-                Browsers.Add(new BrowserViewModel(b, _service));
+                Browsers.Clear();
+                foreach (var b in result.Value)
+                {
+                    Browsers.Add(new BrowserViewModel(b, _service, _toastService, _logger));
+                }
+            }
+            else
+            {
+                _toastService.ShowError("Failed to load browsers", result.ErrorMessage ?? "Unknown error.");
             }
         }
-        IsLoading = false;
+        catch (System.Exception ex)
+        {
+            _logger.LogError(ex, "LoadBrowsers threw an exception.");
+            _toastService.ShowError("Failed to load browsers", ex.Message);
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 }

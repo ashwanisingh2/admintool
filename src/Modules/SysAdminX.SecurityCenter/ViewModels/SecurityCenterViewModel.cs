@@ -58,35 +58,50 @@ public partial class SecurityCenterViewModel : ObservableObject
     [RelayCommand]
     public async Task LoadDataAsync()
     {
+        if (IsLoading) return;
         IsLoading = true;
         try
         {
-            DefenderStatus = await _securityService.GetDefenderStatusAsync();
-            
-            var volumes = await _securityService.GetBitLockerStatusAsync();
-            BitLockerVolumes.Clear();
-            foreach (var vol in volumes)
+            _logger.LogInformation("Loading Security Center data (parallel queries)...");
+
+            // Run all 7 independent queries in parallel — they each launch a
+            // separate PowerShell host, so sequential awaiting previously took
+            // 5-10s on a cold cache. Parallel cuts that to ~1-2s.
+            var defenderTask     = _securityService.GetDefenderStatusAsync();
+            var bitLockerTask    = _securityService.GetBitLockerStatusAsync();
+            var firewallTask     = _securityService.GetFirewallProfilesAsync();
+            var avProductsTask   = _securityService.GetAntivirusProductsAsync();
+            var uacTask          = _securityService.GetUacStatusAsync();
+            var wuTask           = _securityService.GetWindowsUpdateStatusAsync();
+            var secureBootTask   = _securityService.GetSecureBootStatusAsync();
+
+            await Task.WhenAll(defenderTask, bitLockerTask, firewallTask,
+                               avProductsTask, uacTask, wuTask, secureBootTask);
+
+            // Marshal all observable-collection updates onto the UI thread
+            // in a single Dispatcher.Invoke so we only pay one cross-thread
+            // round-trip instead of seven.
+            System.Windows.Application.Current?.Dispatcher.Invoke(() =>
             {
-                BitLockerVolumes.Add(vol);
-            }
-            
-            var profiles = await _securityService.GetFirewallProfilesAsync();
-            FirewallProfiles.Clear();
-            foreach (var p in profiles)
-            {
-                FirewallProfiles.Add(p);
-            }
-            
-            var avProducts = await _securityService.GetAntivirusProductsAsync();
-            AntivirusProducts.Clear();
-            foreach (var av in avProducts)
-            {
-                AntivirusProducts.Add(av);
-            }
-            
-            UacStatus = await _securityService.GetUacStatusAsync();
-            WindowsUpdateStatus = await _securityService.GetWindowsUpdateStatusAsync();
-            SecureBootStatus = await _securityService.GetSecureBootStatusAsync();
+                DefenderStatus = defenderTask.Result;
+
+                BitLockerVolumes.Clear();
+                foreach (var vol in bitLockerTask.Result) BitLockerVolumes.Add(vol);
+
+                FirewallProfiles.Clear();
+                foreach (var p in firewallTask.Result) FirewallProfiles.Add(p);
+
+                AntivirusProducts.Clear();
+                foreach (var av in avProductsTask.Result) AntivirusProducts.Add(av);
+
+                UacStatus = uacTask.Result;
+                WindowsUpdateStatus = wuTask.Result;
+                SecureBootStatus = secureBootTask.Result;
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load Security Center data");
         }
         finally
         {

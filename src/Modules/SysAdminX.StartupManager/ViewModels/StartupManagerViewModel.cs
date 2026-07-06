@@ -56,12 +56,13 @@ public partial class StartupManagerViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task LoadStartupAppsAsync()
+    private async Task LoadStartupAppsAsync(CancellationToken ct = default)
     {
+        if (IsLoading) return;
         IsLoading = true;
         try
         {
-            var result = await _startupManagerService.GetStartupAppsAsync();
+            var result = await _startupManagerService.GetStartupAppsAsync(ct);
             if (result.IsSuccess && result.Value != null)
             {
                 foreach (var app in StartupApps)
@@ -79,6 +80,10 @@ public partial class StartupManagerViewModel : ObservableObject
             {
                 _snackbarService.Show("Error", result.ErrorMessage ?? "Failed to load startup apps", ControlAppearance.Danger, new SymbolIcon(SymbolRegular.ErrorCircle24), TimeSpan.FromSeconds(3));
             }
+        }
+        catch (OperationCanceledException)
+        {
+            // ignore — user navigated away
         }
         finally
         {

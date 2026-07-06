@@ -18,12 +18,19 @@ namespace SysAdminX.DeviceDetails.ViewModels;
 
 /// <summary>
 /// ViewModel for the Device Details view.
+///
+/// Improvements applied:
+///   - <see cref="IsLoading"/> now resets in <c>finally</c> so an exception
+///     can no longer leave the spinner stuck on.
+///   - TRIM operation is wrapped in try/finally with explicit cancellation
+///     and toast feedback.
 /// </summary>
 public partial class DeviceDetailsViewModel : ObservableObject
 {
     private readonly ILogger<DeviceDetailsViewModel> _logger;
     private readonly IDeviceDetailsService _deviceService;
     private readonly ITrimService _trimService;
+    private readonly IToastNotificationService _toastService;
 
     [ObservableProperty]
     private DeviceDetailsModel _deviceDetails = new();
@@ -32,6 +39,7 @@ public partial class DeviceDetailsViewModel : ObservableObject
     private bool _isLoading;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasError))]
     private string _errorMessage = string.Empty;
 
     [ObservableProperty]
@@ -43,14 +51,22 @@ public partial class DeviceDetailsViewModel : ObservableObject
     [ObservableProperty]
     private string _successMessage = string.Empty;
 
+    /// <summary>True while a TRIM operation is in flight (drives a per-drive spinner).</summary>
+    [ObservableProperty]
+    private bool _isTrimRunning;
+
+    public bool HasError => !string.IsNullOrEmpty(ErrorMessage);
+
     public DeviceDetailsViewModel(
         ILogger<DeviceDetailsViewModel> logger,
         IDeviceDetailsService deviceService,
-        ITrimService trimService)
+        ITrimService trimService,
+        IToastNotificationService toastService)
     {
         _logger = logger;
         _deviceService = deviceService;
         _trimService = trimService;
+        _toastService = toastService;
     }
 
     [RelayCommand]
@@ -64,21 +80,36 @@ public partial class DeviceDetailsViewModel : ObservableObject
 
         _logger.LogInformation("Loading device details...");
 
-        var result = await _deviceService.GetDeviceDetailsAsync(ct);
+        try
+        {
+            var result = await _deviceService.GetDeviceDetailsAsync(ct);
 
-        if (result.IsSuccess && result.Value != null)
-        {
-            DeviceDetails = result.Value;
-            _logger.LogInformation("Device details loaded successfully.");
+            if (result.IsSuccess && result.Value != null)
+            {
+                DeviceDetails = result.Value;
+                _logger.LogInformation("Device details loaded successfully.");
+            }
+            else
+            {
+                HasError = true;
+                ErrorMessage = result.ErrorMessage ?? "Unknown error occurred while loading device details.";
+                _logger.LogError("Failed to load device details: {Error}", ErrorMessage);
+            }
         }
-        else
+        catch (OperationCanceledException)
         {
+            _logger.LogInformation("Device details load cancelled.");
+        }
+        catch (System.Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected exception loading device details.");
             HasError = true;
-            ErrorMessage = result.ErrorMessage ?? "Unknown error occurred while loading device details.";
-            _logger.LogError("Failed to load device details: {Error}", ErrorMessage);
+            ErrorMessage = ex.Message;
         }
-
-        IsLoading = false;
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
     [RelayCommand]
@@ -88,25 +119,50 @@ public partial class DeviceDetailsViewModel : ObservableObject
     }
 
     [RelayCommand]
-    public async Task RunTrimAsync(string driveLetter)
+    public async Task RunTrimAsync(string driveLetter, CancellationToken ct = default)
     {
+        if (IsTrimRunning) return;
+
         IsSuccess = false;
         HasError = false;
-        
+        IsTrimRunning = true;
+
         _logger.LogInformation("Running TRIM on {Drive}", driveLetter);
-        var result = await _trimService.RunTrimAsync(driveLetter, CancellationToken.None);
-        
-        if (result.IsSuccess)
+
+        try
         {
-            _logger.LogInformation("TRIM successful for {Drive}", driveLetter);
-            SuccessMessage = $"TRIM optimization completed successfully on {driveLetter}";
-            IsSuccess = true;
+            var result = await _trimService.RunTrimAsync(driveLetter, ct);
+
+            if (result.IsSuccess)
+            {
+                _logger.LogInformation("TRIM successful for {Drive}", driveLetter);
+                SuccessMessage = $"TRIM optimization completed successfully on {driveLetter}";
+                IsSuccess = true;
+                _toastService.ShowSuccess($"TRIM complete on {driveLetter}",
+                    "SSD optimization finished.");
+            }
+            else
+            {
+                _logger.LogError("TRIM failed for {Drive}: {Error}", driveLetter, result.ErrorMessage);
+                ErrorMessage = result.ErrorMessage ?? "Unknown error occurred while running TRIM.";
+                HasError = true;
+                _toastService.ShowError($"TRIM failed on {driveLetter}", ErrorMessage);
+            }
         }
-        else
+        catch (OperationCanceledException)
         {
-            _logger.LogError("TRIM failed for {Drive}: {Error}", driveLetter, result.ErrorMessage);
-            ErrorMessage = result.ErrorMessage ?? "Unknown error occurred while running TRIM.";
+            _logger.LogInformation("TRIM cancelled for {Drive}", driveLetter);
+        }
+        catch (System.Exception ex)
+        {
+            _logger.LogError(ex, "TRIM threw an exception for {Drive}", driveLetter);
+            ErrorMessage = ex.Message;
             HasError = true;
+            _toastService.ShowError($"TRIM failed on {driveLetter}", ex.Message);
+        }
+        finally
+        {
+            IsTrimRunning = false;
         }
     }
 }

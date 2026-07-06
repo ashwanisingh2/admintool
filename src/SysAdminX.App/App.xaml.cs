@@ -131,6 +131,15 @@ public partial class App : Application
         services.AddSingleton<SysAdminX.Core.Interfaces.INavigationService>(sp => sp.GetRequiredService<SysAdminX.Shell.Services.NavigationService>());
         services.AddSingleton<IPageService, NavigationViewPageProvider>();
 
+        // WPF-UI snackbar service — registered as a singleton so every
+        // ViewModel that asks for ISnackbarService gets the same instance.
+        services.AddSingleton<Wpf.Ui.Controls.ISnackbarService, Wpf.Ui.Controls.SnackbarService>();
+
+        // Cross-module toast notification (must be singleton so the snackbar
+        // service can be attached once after the main window is created).
+        services.AddSingleton<SysAdminX.Shell.Services.ToastNotificationService>();
+        services.AddSingleton<SysAdminX.Core.Interfaces.IToastNotificationService>(sp => sp.GetRequiredService<SysAdminX.Shell.Services.ToastNotificationService>());
+
         // Shell
         services.AddSingleton<MainWindowViewModel>();
         services.AddSingleton<MainWindow>();

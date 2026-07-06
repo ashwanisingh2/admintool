@@ -60,24 +60,67 @@ public partial class AIAssistantViewModel : ObservableObject
         if (string.IsNullOrWhiteSpace(UserInput) || IsGenerating)
             return;
 
-        var userMessage = new ChatMessageModel { Role = "user", Content = UserInput };
+        var userText = UserInput;
+        var userMessage = new ChatMessageModel { Role = "user", Content = userText };
         ChatHistory.Add(userMessage);
-        
+
         UserInput = string.Empty;
         IsGenerating = true;
 
-        var result = await _aiService.SendMessageAsync(new System.Collections.Generic.List<ChatMessageModel>(ChatHistory), Config, ct);
+        // Per-request cancellation so the user can navigate away mid-response
+        // without orphaning a hanging HTTP call.
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        linkedCts.CancelAfter(TimeSpan.FromSeconds(60));
 
-        if (result.IsSuccess)
+        try
         {
-            ChatHistory.Add(new ChatMessageModel { Role = "assistant", Content = result.Value ?? "" });
-        }
-        else
-        {
-            ChatHistory.Add(new ChatMessageModel { Role = "assistant", Content = $"⚠️ Error: {result.ErrorMessage}" });
-        }
+            // Send a snapshot of the chat history so the model sees the full
+            // context without us exposing internal mutation during the await.
+            var snapshot = new System.Collections.Generic.List<ChatMessageModel>(ChatHistory);
+            var result = await _aiService.SendMessageAsync(snapshot, Config, linkedCts.Token);
 
-        IsGenerating = false;
+            if (result.IsSuccess)
+            {
+                ChatHistory.Add(new ChatMessageModel { Role = "assistant", Content = result.Value ?? "" });
+            }
+            else
+            {
+                var err = result.ErrorMessage ?? "Unknown error";
+                _logger.LogWarning("AI request failed: {Error}", err);
+                ChatHistory.Add(new ChatMessageModel
+                {
+                    Role = "assistant",
+                    Content = $"⚠️ Error: {err}"
+                });
+            }
+        }
+        catch (OperationCanceledException) when (linkedCts.IsCancellationRequested && !ct.IsCancellationRequested)
+        {
+            ChatHistory.Add(new ChatMessageModel
+            {
+                Role = "assistant",
+                Content = "⚠️ Request timed out after 60 seconds. The local model may be busy — please try again."
+            });
+        }
+        catch (OperationCanceledException)
+        {
+            // Caller-cancelled (page navigation / shutdown). Don't add a chat
+            // message — the user is no longer looking.
+            _logger.LogInformation("AI request cancelled by caller.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected exception sending message to AI service");
+            ChatHistory.Add(new ChatMessageModel
+            {
+                Role = "assistant",
+                Content = $"⚠️ Unexpected error: {ex.Message}"
+            });
+        }
+        finally
+        {
+            IsGenerating = false;
+        }
     }
 
     [RelayCommand]

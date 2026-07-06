@@ -50,62 +50,95 @@ public partial class DriverManagerViewModel : ObservableObject
     [ObservableProperty]
     private bool _isRegistrySafeModeEnabled = true;
 
-    public DriverManagerViewModel(ILogger<DriverManagerViewModel> logger, IDriverManagerService driverService)
+    public DriverManagerViewModel(
+        ILogger<DriverManagerViewModel> logger,
+        IDriverManagerService driverService,
+        SysAdminX.Core.Interfaces.IToastNotificationService toastService)
     {
         _logger = logger;
         _driverService = driverService;
+        _toastService = toastService;
     }
 
+    private readonly SysAdminX.Core.Interfaces.IToastNotificationService _toastService;
+
     [RelayCommand]
-    private async Task DisableDriverAsync(DriverInfoModel? driver)
+    private async Task DisableDriverAsync(DriverInfoModel? driver, CancellationToken ct = default)
     {
         if (driver == null || string.IsNullOrWhiteSpace(driver.HardwareId)) return;
-        var result = await _driverService.DisableDriverWithBackupAsync(driver.HardwareId, IsRegistrySafeModeEnabled, CancellationToken.None);
-        if (result.IsSuccess)
+        try
         {
-            System.Windows.MessageBox.Show($"Driver Disabled.\nBackup saved to:\n{result.Value}", "Success", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
-            await RefreshAsync(CancellationToken.None);
+            var result = await _driverService.DisableDriverWithBackupAsync(driver.HardwareId, IsRegistrySafeModeEnabled, ct);
+            if (result.IsSuccess)
+            {
+                _toastService.ShowSuccess($"Driver disabled: {driver.DeviceName}",
+                    $"Backup saved to:\n{result.Value}");
+                await RefreshAsync(ct);
+            }
+            else
+            {
+                _toastService.ShowError("Failed to disable driver", result.ErrorMessage ?? "Unknown error.");
+            }
         }
-        else
+        catch (Exception ex)
         {
-            System.Windows.MessageBox.Show($"Failed to disable driver:\n{result.ErrorMessage}", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            _logger.LogError(ex, "Disable driver threw an exception.");
+            _toastService.ShowError("Failed to disable driver", ex.Message);
         }
     }
 
     [RelayCommand]
-    private async Task EnableDriverAsync(DriverInfoModel? driver)
+    private async Task EnableDriverAsync(DriverInfoModel? driver, CancellationToken ct = default)
     {
         if (driver == null || string.IsNullOrWhiteSpace(driver.HardwareId)) return;
-        var result = await _driverService.EnableDriverAsync(driver.HardwareId, CancellationToken.None);
-        if (result.IsSuccess)
+        try
         {
-            System.Windows.MessageBox.Show("Driver Enabled.", "Success", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
-            await RefreshAsync(CancellationToken.None);
+            var result = await _driverService.EnableDriverAsync(driver.HardwareId, ct);
+            if (result.IsSuccess)
+            {
+                _toastService.ShowSuccess($"Driver enabled: {driver.DeviceName}",
+                    "The driver was re-enabled.");
+                await RefreshAsync(ct);
+            }
+            else
+            {
+                _toastService.ShowError("Failed to enable driver", result.ErrorMessage ?? "Unknown error.");
+            }
         }
-        else
+        catch (Exception ex)
         {
-            System.Windows.MessageBox.Show($"Failed to enable driver:\n{result.ErrorMessage}", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            _logger.LogError(ex, "Enable driver threw an exception.");
+            _toastService.ShowError("Failed to enable driver", ex.Message);
         }
     }
 
     [RelayCommand]
-    private async Task RollbackDriverAsync(DriverInfoModel? driver)
+    private async Task RollbackDriverAsync(DriverInfoModel? driver, CancellationToken ct = default)
     {
         if (driver == null || string.IsNullOrWhiteSpace(driver.HardwareId)) return;
-        var result = await _driverService.RollbackDriverAsync(driver.HardwareId, CancellationToken.None);
-        if (result.IsSuccess)
+        try
         {
-            System.Windows.MessageBox.Show("Driver Rolled Back successfully.", "Success", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
-            await RefreshAsync(CancellationToken.None);
+            var result = await _driverService.RollbackDriverAsync(driver.HardwareId, ct);
+            if (result.IsSuccess)
+            {
+                _toastService.ShowSuccess($"Driver rolled back: {driver.DeviceName}",
+                    "The previous driver version was restored.");
+                await RefreshAsync(ct);
+            }
+            else
+            {
+                _toastService.ShowError("Failed to roll back driver", result.ErrorMessage ?? "Unknown error.");
+            }
         }
-        else
+        catch (Exception ex)
         {
-            System.Windows.MessageBox.Show($"Failed to rollback driver:\n{result.ErrorMessage}", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            _logger.LogError(ex, "Rollback driver threw an exception.");
+            _toastService.ShowError("Failed to roll back driver", ex.Message);
         }
     }
 
     [RelayCommand]
-    private async Task RestoreBackupAsync()
+    private async Task RestoreBackupAsync(CancellationToken ct = default)
     {
         var dialog = new Microsoft.Win32.OpenFileDialog
         {
@@ -115,14 +148,22 @@ public partial class DriverManagerViewModel : ObservableObject
 
         if (dialog.ShowDialog() == true)
         {
-            var result = await _driverService.RestoreFromBackupAsync(dialog.FileName, CancellationToken.None);
-            if (result.IsSuccess)
+            try
             {
-                System.Windows.MessageBox.Show("Backup restored successfully.", "Success", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+                var result = await _driverService.RestoreFromBackupAsync(dialog.FileName, ct);
+                if (result.IsSuccess)
+                {
+                    _toastService.ShowSuccess("Backup restored", dialog.FileName);
+                }
+                else
+                {
+                    _toastService.ShowError("Failed to restore backup", result.ErrorMessage ?? "Unknown error.");
+                }
             }
-            else
+            catch (Exception ex)
             {
-                System.Windows.MessageBox.Show($"Failed to restore backup:\n{result.ErrorMessage}", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                _logger.LogError(ex, "Restore backup threw an exception.");
+                _toastService.ShowError("Failed to restore backup", ex.Message);
             }
         }
     }
@@ -138,22 +179,40 @@ public partial class DriverManagerViewModel : ObservableObject
         Drivers.Clear();
         _allDrivers.Clear();
 
-        var result = await _driverService.ScanDriversAsync(ct);
-
-        await CheckOemUpdaterAsync(ct);
-
-        if (result.IsSuccess && result.Value != null)
+        try
         {
-            _allDrivers = result.Value;
-            FilterDrivers();
+            var result = await _driverService.ScanDriversAsync(ct);
+
+            await CheckOemUpdaterAsync(ct);
+
+            if (result.IsSuccess && result.Value != null)
+            {
+                _allDrivers = result.Value;
+                FilterDrivers();
+                _logger.LogInformation("Loaded {Count} drivers.", _allDrivers.Count);
+            }
+            else
+            {
+                HasError = true;
+                ErrorMessage = result.ErrorMessage ?? "Unknown error occurred.";
+                _toastService.ShowError("Failed to load drivers", ErrorMessage);
+            }
         }
-        else
+        catch (OperationCanceledException)
         {
+            _logger.LogInformation("Driver scan cancelled.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Driver scan threw an exception.");
             HasError = true;
-            ErrorMessage = result.ErrorMessage ?? "Unknown error occurred.";
+            ErrorMessage = ex.Message;
+            _toastService.ShowError("Failed to load drivers", ex.Message);
         }
-
-        IsLoading = false;
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
     [RelayCommand]
@@ -227,11 +286,11 @@ public partial class DriverManagerViewModel : ObservableObject
         if (!string.IsNullOrWhiteSpace(SearchQuery))
         {
             var q = SearchQuery.ToLowerInvariant();
-            filtered = filtered.Where(d => 
-                d.DeviceName.ToLowerInvariant().Contains(q) || 
-                d.Manufacturer.ToLowerInvariant().Contains(q) || 
-                d.ClassName.ToLowerInvariant().Contains(q) ||
-                d.Provider.ToLowerInvariant().Contains(q));
+            filtered = filtered.Where(d =>
+                (d.DeviceName?.ToLowerInvariant().Contains(q) == true) ||
+                (d.Manufacturer?.ToLowerInvariant().Contains(q) == true) ||
+                (d.ClassName?.ToLowerInvariant().Contains(q) == true) ||
+                (d.Provider?.ToLowerInvariant().Contains(q) == true));
         }
 
         Drivers = new ObservableCollection<DriverInfoModel>(filtered.OrderBy(d => d.DeviceName));
@@ -255,48 +314,86 @@ public partial class DriverManagerViewModel : ObservableObject
 
         _logger.LogInformation("Scanning for driver updates...");
 
-        var result = await _driverService.ScanDriverUpdatesAsync(ct);
-
-        if (result.IsSuccess && result.Value != null)
+        try
         {
-            MissingDriverUpdates = new ObservableCollection<string>(result.Value);
-            _logger.LogInformation("Found {Count} driver updates.", MissingDriverUpdates.Count);
-            
-            if (MissingDriverUpdates.Count == 0)
+            var result = await _driverService.ScanDriverUpdatesAsync(ct);
+
+            if (result.IsSuccess && result.Value != null)
             {
-                MissingDriverUpdates.Add("System is up to date. No driver updates found.");
+                MissingDriverUpdates = new ObservableCollection<string>(result.Value);
+                _logger.LogInformation("Found {Count} driver updates.", MissingDriverUpdates.Count);
+
+                if (MissingDriverUpdates.Count == 0)
+                {
+                    MissingDriverUpdates.Add("System is up to date. No driver updates found.");
+                }
+                _toastService.ShowSuccess("Driver update scan complete",
+                    $"Found {MissingDriverUpdates.Count} driver updates.");
+            }
+            else
+            {
+                HasError = true;
+                ErrorMessage = result.ErrorMessage ?? "Failed to scan for driver updates.";
+                _logger.LogError("Driver update scan failed: {Error}", ErrorMessage);
+                _toastService.ShowError("Driver update scan failed", ErrorMessage);
             }
         }
-        else
+        catch (OperationCanceledException)
         {
-            HasError = true;
-            ErrorMessage = result.ErrorMessage ?? "Failed to scan for driver updates.";
-            _logger.LogError("Driver update scan failed: {Error}", ErrorMessage);
+            _logger.LogInformation("Driver update scan cancelled.");
         }
-
-        IsScanningUpdates = false;
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Driver update scan threw an exception.");
+            HasError = true;
+            ErrorMessage = ex.Message;
+            _toastService.ShowError("Driver update scan failed", ex.Message);
+        }
+        finally
+        {
+            IsScanningUpdates = false;
+        }
     }
 
     [RelayCommand]
     public async Task InstallUpdatesAsync(CancellationToken ct)
     {
         if (IsScanningUpdates) return;
-        
+
         IsScanningUpdates = true;
-        
-        var result = await _driverService.InstallDriverUpdatesAsync(ct);
-        
-        if (result.IsSuccess)
+
+        try
         {
-            await ScanUpdatesAsync(ct);
+            var result = await _driverService.InstallDriverUpdatesAsync(ct);
+
+            if (result.IsSuccess)
+            {
+                _toastService.ShowSuccess("Driver updates installed",
+                    "All available driver updates were installed.");
+                await ScanUpdatesAsync(ct);
+            }
+            else
+            {
+                HasError = true;
+                ErrorMessage = result.ErrorMessage ?? "Failed to run install updates command.";
+                _toastService.ShowError("Driver install failed", ErrorMessage);
+            }
         }
-        else
+        catch (OperationCanceledException)
         {
+            _logger.LogInformation("Driver install cancelled.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Driver install threw an exception.");
             HasError = true;
-            ErrorMessage = result.ErrorMessage ?? "Failed to run install updates command.";
+            ErrorMessage = ex.Message;
+            _toastService.ShowError("Driver install failed", ex.Message);
         }
-        
-        IsScanningUpdates = false;
+        finally
+        {
+            IsScanningUpdates = false;
+        }
     }
 
     [ObservableProperty]
@@ -312,23 +409,42 @@ public partial class DriverManagerViewModel : ObservableObject
     public async Task ScanUnsignedDriversAsync(CancellationToken ct)
     {
         if (IsScanningUnsigned) return;
-        
+
         IsScanningUnsigned = true;
         UnsignedDrivers.Clear();
 
-        var result = await _driverService.ScanUnsignedDriversAsync(ct);
+        try
+        {
+            var result = await _driverService.ScanUnsignedDriversAsync(ct);
 
-        if (result.IsSuccess && result.Value != null)
-        {
-            UnsignedDrivers = new ObservableCollection<DriverInfoModel>(result.Value);
+            if (result.IsSuccess && result.Value != null)
+            {
+                UnsignedDrivers = new ObservableCollection<DriverInfoModel>(result.Value);
+                _toastService.ShowSuccess("Unsigned driver scan complete",
+                    $"Found {UnsignedDrivers.Count} unsigned drivers.");
+            }
+            else
+            {
+                HasError = true;
+                ErrorMessage = result.ErrorMessage ?? "Failed to scan unsigned drivers.";
+                _toastService.ShowError("Unsigned driver scan failed", ErrorMessage);
+            }
         }
-        else
+        catch (OperationCanceledException)
         {
+            _logger.LogInformation("Unsigned driver scan cancelled.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unsigned driver scan threw an exception.");
             HasError = true;
-            ErrorMessage = result.ErrorMessage ?? "Failed to scan unsigned drivers.";
+            ErrorMessage = ex.Message;
+            _toastService.ShowError("Unsigned driver scan failed", ex.Message);
         }
-
-        IsScanningUnsigned = false;
+        finally
+        {
+            IsScanningUnsigned = false;
+        }
     }
 
     [RelayCommand]

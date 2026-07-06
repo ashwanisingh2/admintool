@@ -66,55 +66,92 @@ public partial class SystemCleanupViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task LoadItemsAsync()
+    private async Task LoadItemsAsync(CancellationToken ct)
     {
         IsLoading = true;
         ErrorMessage = string.Empty;
         CleanupItems.Clear();
 
-        var result = await _cleanupService.GetCleanupItemsAsync();
-        if (result.IsSuccess && result.Value != null)
+        try
         {
-            foreach (var item in result.Value)
+            var result = await _cleanupService.GetCleanupItemsAsync(ct);
+            if (result.IsSuccess && result.Value != null)
             {
-                CleanupItems.Add(item);
+                foreach (var item in result.Value)
+                {
+                    CleanupItems.Add(item);
+                }
+            }
+            else
+            {
+                ErrorMessage = result.ErrorMessage ?? "Failed to load cleanup items.";
             }
         }
-        else
+        catch (OperationCanceledException)
         {
-            ErrorMessage = result.ErrorMessage ?? "Failed to load cleanup items.";
+            // ignore — user navigated away
         }
-
-        IsLoading = false;
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load cleanup items.");
+            ErrorMessage = ex.Message;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
     [RelayCommand]
-    private async Task PerformCleanupAsync()
+    private async Task PerformCleanupAsync(CancellationToken ct)
     {
         var selectedItems = CleanupItems.Where(i => i.IsSelected).ToList();
-        if (!selectedItems.Any()) return;
+        if (!selectedItems.Any())
+        {
+            ErrorMessage = "Select at least one category to clean.";
+            return;
+        }
 
         IsLoading = true;
         ErrorMessage = string.Empty;
 
-        var result = await _cleanupService.CleanAsync(selectedItems);
-        if (!result.IsSuccess)
+        try
         {
-            ErrorMessage = result.ErrorMessage ?? "Cleanup failed.";
-        }
-        else
-        {
-            _lastCleanupResult = result.Value;
-            IsUndoVisible = true;
-            UndoCountdown = 30;
-            _undoTimer.Start();
-        }
+            var result = await _cleanupService.CleanAsync(selectedItems, ct);
+            if (!result.IsSuccess)
+            {
+                ErrorMessage = result.ErrorMessage ?? "Cleanup failed.";
+            }
+            else
+            {
+                _lastCleanupResult = result.Value;
+                IsUndoVisible = true;
+                UndoCountdown = 30;
+                _undoTimer.Start();
 
-        await LoadItemsAsync();
+                var freedBytes = result.Value?.TotalBytesFreed ?? 0;
+                _logger.LogInformation("Cleanup freed {Bytes} bytes.", freedBytes);
+            }
+
+            await LoadItemsAsync(ct);
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("Cleanup cancelled.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Cleanup threw an exception.");
+            ErrorMessage = ex.Message;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
     [RelayCommand]
-    private async Task UndoAsync()
+    private async Task UndoAsync(CancellationToken ct)
     {
         if (_lastCleanupResult == null) return;
 
@@ -122,14 +159,31 @@ public partial class SystemCleanupViewModel : ObservableObject
         IsUndoVisible = false;
         IsLoading = true;
 
-        var result = await _cleanupService.UndoAsync(_lastCleanupResult.BackupDirectory, _lastCleanupResult.MovedFiles);
-        if (!result.IsSuccess)
+        try
         {
-            ErrorMessage = result.ErrorMessage ?? "Undo failed.";
+            var result = await _cleanupService.UndoAsync(
+                _lastCleanupResult.BackupDirectory,
+                _lastCleanupResult.MovedFiles, ct);
+            if (!result.IsSuccess)
+            {
+                ErrorMessage = result.ErrorMessage ?? "Undo failed.";
+            }
         }
-        _lastCleanupResult = null;
-
-        await LoadItemsAsync();
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("Undo cancelled.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Undo threw an exception.");
+            ErrorMessage = ex.Message;
+        }
+        finally
+        {
+            _lastCleanupResult = null;
+            await LoadItemsAsync(ct);
+            IsLoading = false;
+        }
     }
 
     private async void UndoTimer_Tick(object? sender, EventArgs e)
@@ -142,7 +196,14 @@ public partial class SystemCleanupViewModel : ObservableObject
 
             if (_lastCleanupResult != null)
             {
-                await _cleanupService.FinalizeAsync(_lastCleanupResult.BackupDirectory);
+                try
+                {
+                    await _cleanupService.FinalizeAsync(_lastCleanupResult.BackupDirectory);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to finalize (auto-delete) cleanup backup directory.");
+                }
                 _lastCleanupResult = null;
             }
         }

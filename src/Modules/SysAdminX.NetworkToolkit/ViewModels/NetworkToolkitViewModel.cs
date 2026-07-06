@@ -64,15 +64,30 @@ public partial class NetworkToolkitViewModel : ObservableObject
         Adapters.Clear();
         Connections.Clear();
 
-        var tasks = new[]
+        try
         {
-            LoadAdaptersAsync(ct),
-            LoadConnectionsAsync(ct)
-        };
+            var tasks = new[]
+            {
+                LoadAdaptersAsync(ct),
+                LoadConnectionsAsync(ct)
+            };
 
-        await Task.WhenAll(tasks);
-
-        IsLoading = false;
+            await Task.WhenAll(tasks);
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("Network toolkit init cancelled.");
+        }
+        catch (System.Exception ex)
+        {
+            _logger.LogError(ex, "Failed to initialize Network Toolkit");
+            HasError = true;
+            ErrorMessage = ex.Message;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
     [RelayCommand]
@@ -157,21 +172,36 @@ public partial class NetworkToolkitViewModel : ObservableObject
         IsScanning = true;
         ScanResults.Clear();
 
-        var result = await _networkService.PortScanAsync(ScannerTarget, ScannerStartPort, ScannerEndPort, ct);
-        if (result.IsSuccess && result.Value != null)
+        try
         {
-            foreach (var r in result.Value)
+            var result = await _networkService.PortScanAsync(ScannerTarget, ScannerStartPort, ScannerEndPort, ct);
+            if (result.IsSuccess && result.Value != null)
             {
-                ScanResults.Add(r);
+                foreach (var r in result.Value)
+                {
+                    ScanResults.Add(r);
+                }
+            }
+            else
+            {
+                HasError = true;
+                ErrorMessage = result.ErrorMessage ?? "Port scan failed";
             }
         }
-        else
+        catch (OperationCanceledException)
         {
-            HasError = true;
-            ErrorMessage = result.ErrorMessage ?? "Port scan failed";
+            _logger.LogInformation("Port scan cancelled.");
         }
-
-        IsScanning = false;
+        catch (System.Exception ex)
+        {
+            _logger.LogError(ex, "Port scan threw an exception.");
+            HasError = true;
+            ErrorMessage = ex.Message;
+        }
+        finally
+        {
+            IsScanning = false;
+        }
     }
 
     [ObservableProperty]
@@ -187,13 +217,29 @@ public partial class NetworkToolkitViewModel : ObservableObject
     public async Task SendWakeOnLanAsync(CancellationToken ct)
     {
         IsSendingWol = true;
-        var result = await _networkService.WakeOnLanAsync(WolMacAddress, ct);
-        if (!result.IsSuccess)
+        try
         {
-            HasError = true;
-            ErrorMessage = result.ErrorMessage ?? "Failed to send WOL packet.";
+            var result = await _networkService.WakeOnLanAsync(WolMacAddress, ct);
+            if (!result.IsSuccess)
+            {
+                HasError = true;
+                ErrorMessage = result.ErrorMessage ?? "Failed to send WOL packet.";
+            }
         }
-        IsSendingWol = false;
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("WOL send cancelled.");
+        }
+        catch (System.Exception ex)
+        {
+            _logger.LogError(ex, "WOL send threw an exception.");
+            HasError = true;
+            ErrorMessage = ex.Message;
+        }
+        finally
+        {
+            IsSendingWol = false;
+        }
     }
 
     [ObservableProperty]
@@ -214,21 +260,36 @@ public partial class NetworkToolkitViewModel : ObservableObject
         IsPingSweeping = true;
         PingSweepResults.Clear();
 
-        var result = await _networkService.PingSweepAsync(PingSweepBaseIP, ct);
-        if (result.IsSuccess && result.Value != null)
+        try
         {
-            foreach (var r in result.Value)
+            var result = await _networkService.PingSweepAsync(PingSweepBaseIP, ct);
+            if (result.IsSuccess && result.Value != null)
             {
-                PingSweepResults.Add(r);
+                foreach (var r in result.Value)
+                {
+                    PingSweepResults.Add(r);
+                }
+            }
+            else
+            {
+                HasError = true;
+                ErrorMessage = result.ErrorMessage ?? "Ping sweep failed";
             }
         }
-        else
+        catch (OperationCanceledException)
         {
-            HasError = true;
-            ErrorMessage = result.ErrorMessage ?? "Ping sweep failed";
+            _logger.LogInformation("Ping sweep cancelled.");
         }
-
-        IsPingSweeping = false;
+        catch (System.Exception ex)
+        {
+            _logger.LogError(ex, "Ping sweep threw an exception.");
+            HasError = true;
+            ErrorMessage = ex.Message;
+        }
+        finally
+        {
+            IsPingSweeping = false;
+        }
     }
 
     [ObservableProperty]
@@ -248,19 +309,30 @@ public partial class NetworkToolkitViewModel : ObservableObject
 
         try
         {
-            var p = new System.Diagnostics.Process();
-            p.StartInfo.FileName = "netsh";
-            p.StartInfo.Arguments = "wlan show networks mode=bssid";
-            p.StartInfo.UseShellExecute = false;
-            p.StartInfo.RedirectStandardOutput = true;
-            p.StartInfo.CreateNoWindow = true;
+            // Spawn netsh on a thread-pool thread so we don't block the UI.
+            // Use a child CancellationTokenSource tied to the command's CT
+            // so that navigation away from the page aborts the scan.
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            linkedCts.CancelAfter(TimeSpan.FromSeconds(15));
+
+            var startInfo = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "netsh",
+                Arguments = "wlan show networks mode=bssid",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                CreateNoWindow = true,
+                StandardOutputEncoding = System.Text.Encoding.Unicode
+            };
+
+            using var p = new System.Diagnostics.Process { StartInfo = startInfo };
             p.Start();
 
-            string output = await p.StandardOutput.ReadToEndAsync(ct);
-            await p.WaitForExitAsync(ct);
+            string output = await p.StandardOutput.ReadToEndAsync(linkedCts.Token);
+            await p.WaitForExitAsync(linkedCts.Token);
 
             var lines = output.Split(new[] { '\r', '\n' }, System.StringSplitOptions.RemoveEmptyEntries);
-            WiFiNetworkModel currentNetwork = null;
+            WiFiNetworkModel? currentNetwork = null;
 
             foreach (var line in lines)
             {
@@ -319,11 +391,19 @@ public partial class NetworkToolkitViewModel : ObservableObject
                 WiFiNetworks.Add(currentNetwork);
             }
         }
+        catch (OperationCanceledException)
+        {
+            _logger.LogWarning("WiFi scan was cancelled or timed out.");
+        }
         catch (System.Exception ex)
         {
             _logger.LogError(ex, "Failed to scan WiFi");
+            HasError = true;
+            ErrorMessage = "WiFi scan failed: " + ex.Message;
         }
-
-        IsScanningWiFi = false;
+        finally
+        {
+            IsScanningWiFi = false;
+        }
     }
 }

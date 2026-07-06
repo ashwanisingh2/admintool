@@ -8,6 +8,7 @@
 using System;
 using System.IO;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using SysAdminX.Core.Models;
@@ -37,19 +38,23 @@ public class SettingsService : ISettingsService
         _settingsFilePath = Path.Combine(appFolder, "settings.json");
     }
 
-    public async Task<AppConfigModel> LoadSettingsAsync()
+    public async Task<AppConfigModel> LoadSettingsAsync(CancellationToken ct = default)
     {
         try
         {
             if (File.Exists(_settingsFilePath))
             {
-                string json = await File.ReadAllTextAsync(_settingsFilePath);
+                string json = await File.ReadAllTextAsync(_settingsFilePath, ct);
                 var config = JsonSerializer.Deserialize<AppConfigModel>(json);
                 if (config != null)
                 {
                     return config;
                 }
             }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -59,14 +64,18 @@ public class SettingsService : ISettingsService
         return new AppConfigModel(); // Return defaults
     }
 
-    public async Task SaveSettingsAsync(AppConfigModel config)
+    public async Task SaveSettingsAsync(AppConfigModel config, CancellationToken ct = default)
     {
         try
         {
             var options = new JsonSerializerOptions { WriteIndented = true };
             string json = JsonSerializer.Serialize(config, options);
-            await File.WriteAllTextAsync(_settingsFilePath, json);
+            await File.WriteAllTextAsync(_settingsFilePath, json, ct);
             _logger.LogInformation("Settings saved successfully to {Path}", _settingsFilePath);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {

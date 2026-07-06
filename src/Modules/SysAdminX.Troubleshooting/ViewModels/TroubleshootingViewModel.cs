@@ -8,9 +8,11 @@
 using System.Collections.ObjectModel;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
+using SysAdminX.Core.Interfaces;
 using SysAdminX.Core.Models;
 using SysAdminX.Troubleshooting.Services;
 
@@ -18,11 +20,19 @@ namespace SysAdminX.Troubleshooting.ViewModels;
 
 /// <summary>
 /// ViewModel for the Troubleshooting module.
+///
+/// Each "Run X" command follows the same pattern:
+///   1. Bail out if another troubleshooting action is already running.
+///   2. Set <see cref="IsRunning"/> (drives the spinner + button disabling).
+///   3. Await the service in a try/catch/finally.
+///   4. Surface the result both as a history entry (UI) and as a toast
+///      (so the user gets immediate feedback even if they switched tabs).
 /// </summary>
 public partial class TroubleshootingViewModel : ObservableObject
 {
     private readonly ILogger<TroubleshootingViewModel> _logger;
     private readonly ITroubleshootingService _troubleshootingService;
+    private readonly IToastNotificationService _toastService;
 
     [ObservableProperty]
     private string _ramTestResult = "No results found";
@@ -30,164 +40,151 @@ public partial class TroubleshootingViewModel : ObservableObject
     [ObservableProperty]
     private ObservableCollection<TroubleshootingActionModel> _actionHistory = new();
 
-    public TroubleshootingViewModel(ILogger<TroubleshootingViewModel> logger, ITroubleshootingService troubleshootingService)
+    [ObservableProperty]
+    private bool _isRunning;
+
+    /// <summary>
+    /// Human-readable label of the action currently in-flight, bound to the
+    /// spinner text in the UI. Empty when nothing is running.
+    /// </summary>
+    [ObservableProperty]
+    private string _currentAction = string.Empty;
+
+    public TroubleshootingViewModel(
+        ILogger<TroubleshootingViewModel> logger,
+        ITroubleshootingService troubleshootingService,
+        IToastNotificationService toastService)
     {
         _logger = logger;
         _troubleshootingService = troubleshootingService;
+        _toastService = toastService;
     }
 
-    [RelayCommand]
-    public async Task RunSfcAsync(CancellationToken ct)
+    /// <summary>
+    /// Helper that wraps the common "run action, add to history, toast" pattern.
+    /// The <paramref name="actionName"/> is shown in the spinner while the
+    /// task runs; the underlying factory returns the service result.
+    /// </summary>
+    private async Task RunActionAsync(
+        string actionName,
+        System.Func<CancellationToken, Task<Result<TroubleshootingActionModel>>> factory,
+        CancellationToken ct)
     {
-        var result = await _troubleshootingService.RunSfcScanAsync(ct);
-        if (result.IsSuccess && result.Value != null)
+        if (IsRunning) return;
+
+        IsRunning = true;
+        CurrentAction = actionName;
+        try
         {
-            ActionHistory.Insert(0, result.Value);
+            var result = await factory(ct);
+            if (result.IsSuccess && result.Value != null)
+            {
+                ActionHistory.Insert(0, result.Value);
+                if (result.Value.IsSuccess)
+                    _toastService.ShowSuccess($"{actionName} completed", result.Value.OutputMessage);
+                else
+                    _toastService.ShowError($"{actionName} failed", result.Value.OutputMessage);
+            }
+            else
+            {
+                var err = result.ErrorMessage ?? "Unknown error";
+                _toastService.ShowError($"{actionName} failed", err);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            _logger.LogError(ex, "{Action} threw an exception", actionName);
+            _toastService.ShowError($"{actionName} threw an exception", ex.Message);
+        }
+        finally
+        {
+            IsRunning = false;
+            CurrentAction = string.Empty;
         }
     }
 
     [RelayCommand]
-    public async Task RunDismCheckAsync(CancellationToken ct)
-    {
-        var result = await _troubleshootingService.RunDismCheckHealthAsync(ct);
-        if (result.IsSuccess && result.Value != null)
-        {
-            ActionHistory.Insert(0, result.Value);
-        }
-    }
+    public Task RunSfcAsync(CancellationToken ct)
+        => RunActionAsync("SFC Scan", _troubleshootingService.RunSfcScanAsync, ct);
 
     [RelayCommand]
-    public async Task RunDismRestoreAsync(CancellationToken ct)
-    {
-        var result = await _troubleshootingService.RunDismRestoreHealthAsync(ct);
-        if (result.IsSuccess && result.Value != null)
-        {
-            ActionHistory.Insert(0, result.Value);
-        }
-    }
+    public Task RunDismCheckAsync(CancellationToken ct)
+        => RunActionAsync("DISM CheckHealth", _troubleshootingService.RunDismCheckHealthAsync, ct);
 
     [RelayCommand]
-    public async Task ClearTempAsync(CancellationToken ct)
-    {
-        var result = await _troubleshootingService.ClearTempFilesAsync(ct);
-        if (result.IsSuccess && result.Value != null)
-        {
-            ActionHistory.Insert(0, result.Value);
-        }
-    }
+    public Task RunDismRestoreAsync(CancellationToken ct)
+        => RunActionAsync("DISM RestoreHealth", _troubleshootingService.RunDismRestoreHealthAsync, ct);
+
+    [RelayCommand]
+    public Task ClearTempAsync(CancellationToken ct)
+        => RunActionAsync("Clear Temp Files", _troubleshootingService.ClearTempFilesAsync, ct);
 
     [RelayCommand]
     public async Task ToggleFastStartupAsync(string enableStr)
     {
         bool enable = enableStr?.ToLowerInvariant() == "true";
-        var result = await _troubleshootingService.ToggleFastStartupAsync(enable, CancellationToken.None);
-        if (result.IsSuccess && result.Value != null)
-        {
-            ActionHistory.Insert(0, result.Value);
-        }
+        await RunActionAsync(
+            enable ? "Enable Fast Startup" : "Disable Fast Startup",
+            _ => _troubleshootingService.ToggleFastStartupAsync(enable, CancellationToken.None),
+            CancellationToken.None);
     }
 
     [RelayCommand]
-    public async Task RunChkdskAsync(CancellationToken ct)
-    {
-        var result = await _troubleshootingService.RunChkdskAsync(ct);
-        if (result.IsSuccess && result.Value != null)
-        {
-            ActionHistory.Insert(0, result.Value);
-        }
-    }
+    public Task RunChkdskAsync(CancellationToken ct)
+        => RunActionAsync("Schedule CHKDSK", _troubleshootingService.RunChkdskAsync, ct);
 
     [RelayCommand]
-    public async Task ResetWindowsUpdateAsync(CancellationToken ct)
-    {
-        var result = await _troubleshootingService.ResetWindowsUpdateAsync(ct);
-        if (result.IsSuccess && result.Value != null)
-        {
-            ActionHistory.Insert(0, result.Value);
-        }
-    }
+    public Task ResetWindowsUpdateAsync(CancellationToken ct)
+        => RunActionAsync("Reset Windows Update", _troubleshootingService.ResetWindowsUpdateAsync, ct);
 
     [RelayCommand]
-    public async Task FixPrintSpoolerAsync(CancellationToken ct)
-    {
-        var result = await _troubleshootingService.FixPrintSpoolerAsync(ct);
-        if (result.IsSuccess && result.Value != null)
-        {
-            ActionHistory.Insert(0, result.Value);
-        }
-    }
+    public Task FixPrintSpoolerAsync(CancellationToken ct)
+        => RunActionAsync("Fix Print Spooler", _troubleshootingService.FixPrintSpoolerAsync, ct);
 
     [RelayCommand]
-    public async Task FlushDnsAsync(CancellationToken ct)
-    {
-        var result = await _troubleshootingService.FlushDnsAsync(ct);
-        if (result.IsSuccess && result.Value != null)
-        {
-            ActionHistory.Insert(0, result.Value);
-        }
-    }
+    public Task FlushDnsAsync(CancellationToken ct)
+        => RunActionAsync("Flush DNS", _troubleshootingService.FlushDnsAsync, ct);
 
     [RelayCommand]
-    public async Task ResetWinsockAsync(CancellationToken ct)
-    {
-        var result = await _troubleshootingService.ResetWinsockAsync(ct);
-        if (result.IsSuccess && result.Value != null)
-        {
-            ActionHistory.Insert(0, result.Value);
-        }
-    }
+    public Task ResetWinsockAsync(CancellationToken ct)
+        => RunActionAsync("Reset Winsock", _troubleshootingService.ResetWinsockAsync, ct);
 
     [RelayCommand]
-    public async Task ResetTcpIpAsync(CancellationToken ct)
-    {
-        var result = await _troubleshootingService.ResetTcpIpAsync(ct);
-        if (result.IsSuccess && result.Value != null)
-        {
-            ActionHistory.Insert(0, result.Value);
-        }
-    }
+    public Task ResetTcpIpAsync(CancellationToken ct)
+        => RunActionAsync("Reset TCP/IP", _troubleshootingService.ResetTcpIpAsync, ct);
 
     [RelayCommand]
-    public async Task RebuildIconCacheAsync(CancellationToken ct)
-    {
-        var result = await _troubleshootingService.RebuildIconCacheAsync(ct);
-        if (result.IsSuccess && result.Value != null)
-        {
-            ActionHistory.Insert(0, result.Value);
-        }
-    }
+    public Task RebuildIconCacheAsync(CancellationToken ct)
+        => RunActionAsync("Rebuild Icon Cache", _troubleshootingService.RebuildIconCacheAsync, ct);
 
     [RelayCommand]
-    public async Task ResetWindowsSearchAsync(CancellationToken ct)
-    {
-        var result = await _troubleshootingService.ResetWindowsSearchAsync(ct);
-        if (result.IsSuccess && result.Value != null)
-        {
-            ActionHistory.Insert(0, result.Value);
-        }
-    }
+    public Task ResetWindowsSearchAsync(CancellationToken ct)
+        => RunActionAsync("Reset Windows Search", _troubleshootingService.ResetWindowsSearchAsync, ct);
 
     [RelayCommand]
-    public async Task ScheduleRamTestAsync(CancellationToken ct)
-    {
-        var result = await _troubleshootingService.ScheduleRamTestAsync(ct);
-        if (result.IsSuccess && result.Value != null)
-        {
-            ActionHistory.Insert(0, result.Value);
-        }
-    }
+    public Task ScheduleRamTestAsync(CancellationToken ct)
+        => RunActionAsync("Schedule RAM Test", _troubleshootingService.ScheduleRamTestAsync, ct);
 
     [RelayCommand]
     public async Task CheckRamResultAsync(CancellationToken ct)
     {
-        var result = await _troubleshootingService.CheckRamTestResultAsync(ct);
-        if (result.IsSuccess)
+        try
         {
-            RamTestResult = result.Value ?? "No results found";
+            var result = await _troubleshootingService.CheckRamTestResultAsync(ct);
+            if (result.IsSuccess)
+            {
+                RamTestResult = result.Value ?? "No results found";
+            }
+            else
+            {
+                RamTestResult = "Failed to retrieve results: " + result.ErrorMessage;
+                _toastService.ShowError("RAM test result", result.ErrorMessage ?? "Failed to retrieve results.");
+            }
         }
-        else
+        catch (System.Exception ex)
         {
-            RamTestResult = "Failed to retrieve results: " + result.ErrorMessage;
+            _logger.LogError(ex, "Failed to retrieve RAM test result");
+            _toastService.ShowError("RAM test result", ex.Message);
         }
     }
 }

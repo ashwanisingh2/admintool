@@ -5,7 +5,9 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
+using System;
 using System.Collections.ObjectModel;
+using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -15,64 +17,116 @@ using SysAdminX.Core.Models;
 
 namespace SysAdminX.PortableTools.ViewModels;
 
+/// <summary>
+/// ViewModel for the Portable Tools module.
+///
+/// Improvements applied:
+///   - All async commands wrapped in try/finally so an exception can no
+///     longer leave IsLoading stuck on.
+///   - Real cancellation token propagation.
+///   - Toast notifications on RunTool outcome.
+/// </summary>
 public partial class PortableToolsViewModel : ObservableObject
 {
     private readonly ILogger<PortableToolsViewModel> _logger;
     private readonly IPortableToolsService _toolsService;
+    private readonly IToastNotificationService _toastService;
 
     [ObservableProperty]
     private bool _isLoading;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasError))]
     private string _errorMessage = string.Empty;
+
+    public bool HasError => !string.IsNullOrEmpty(ErrorMessage);
 
     public ObservableCollection<PortableToolModel> Tools { get; } = new();
 
     public PortableToolsViewModel(
         ILogger<PortableToolsViewModel> logger,
-        IPortableToolsService toolsService)
+        IPortableToolsService toolsService,
+        IToastNotificationService toastService)
     {
         _logger = logger;
         _toolsService = toolsService;
+        _toastService = toastService;
     }
 
     [RelayCommand]
-    private async Task LoadToolsAsync()
+    private async Task LoadToolsAsync(CancellationToken ct = default)
     {
+        if (IsLoading) return;
         IsLoading = true;
         ErrorMessage = string.Empty;
         Tools.Clear();
 
-        var result = await _toolsService.GetAvailableToolsAsync();
-        if (result.IsSuccess && result.Value != null)
+        try
         {
-            foreach (var item in result.Value)
+            var result = await _toolsService.GetAvailableToolsAsync(ct);
+            if (result.IsSuccess && result.Value != null)
             {
-                Tools.Add(item);
+                foreach (var item in result.Value)
+                {
+                    Tools.Add(item);
+                }
+            }
+            else
+            {
+                ErrorMessage = result.ErrorMessage ?? "Failed to load tools.";
+                _toastService.ShowError("Failed to load portable tools", ErrorMessage);
             }
         }
-        else
+        catch (OperationCanceledException)
         {
-            ErrorMessage = result.ErrorMessage ?? "Failed to load tools.";
+            _logger.LogInformation("Load tools cancelled.");
         }
-
-        IsLoading = false;
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Load tools threw an exception.");
+            ErrorMessage = ex.Message;
+            _toastService.ShowError("Failed to load portable tools", ex.Message);
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
     [RelayCommand]
-    private async Task RunToolAsync(string toolId)
+    private async Task RunToolAsync(string toolId, CancellationToken ct = default)
     {
         if (string.IsNullOrEmpty(toolId)) return;
 
         IsLoading = true;
         ErrorMessage = string.Empty;
 
-        var result = await _toolsService.RunToolAsync(toolId);
-        if (!result.IsSuccess)
+        try
         {
-            ErrorMessage = result.ErrorMessage ?? "Failed to launch tool.";
+            var result = await _toolsService.RunToolAsync(toolId, ct);
+            if (!result.IsSuccess)
+            {
+                ErrorMessage = result.ErrorMessage ?? "Failed to launch tool.";
+                _toastService.ShowError("Failed to launch tool", ErrorMessage);
+            }
+            else
+            {
+                _toastService.ShowSuccess("Tool launched", toolId);
+            }
         }
-
-        IsLoading = false;
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("Run tool cancelled.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Run tool threw an exception.");
+            ErrorMessage = ex.Message;
+            _toastService.ShowError("Failed to launch tool", ex.Message);
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 }

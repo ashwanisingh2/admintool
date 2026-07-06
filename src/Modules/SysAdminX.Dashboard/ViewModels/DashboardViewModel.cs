@@ -231,11 +231,9 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             HasError = false;
             _logger.LogInformation("Initializing Dashboard");
 
-            // Load Windows info (one-time)
-            await LoadWindowsInfoAsync();
-
-            // Load disk info
-            await LoadDiskInfoAsync();
+            // Load Windows info and disk info in parallel — they hit different
+            // WMI namespaces and were previously serialized.
+            await Task.WhenAll(LoadWindowsInfoAsync(), LoadDiskInfoAsync());
 
             // Start real-time monitoring
             await StartMonitoringAsync();
