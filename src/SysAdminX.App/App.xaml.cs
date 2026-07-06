@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using SysAdminX.Core.Interfaces;
+using SysAdminX.Core.Models;
 using SysAdminX.Dashboard.ViewModels;
 using SysAdminX.Dashboard.Views;
 using SysAdminX.Infrastructure;
@@ -41,6 +42,11 @@ public partial class App : Application
     /// </summary>
     private async void OnStartup(object sender, StartupEventArgs e)
     {
+        // Show the splash window immediately so the user sees feedback while
+        // we build the DI container and load settings.
+        var splash = new SysAdminX.Shell.Views.SplashWindow();
+        splash.Show();
+
         try
         {
             // Configure Serilog
@@ -70,11 +76,11 @@ public partial class App : Application
 
             // Show main window
             var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
-            
+
             // Apply saved theme
             var settingsService = _serviceProvider.GetRequiredService<SysAdminX.Settings.Services.ISettingsService>();
             var config = await settingsService.LoadSettingsAsync();
-            
+
             if (config.Theme.Equals("Dark", System.StringComparison.OrdinalIgnoreCase))
             {
                 Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Dark);
@@ -83,6 +89,9 @@ public partial class App : Application
             {
                 Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Light);
             }
+
+            // Update splash loading text
+            splash.LoadingText.Text = "Loading modules...";
 
             mainWindow.Show();
 
@@ -96,12 +105,59 @@ public partial class App : Application
             // Navigate to dashboard
             navigationService?.NavigateTo(typeof(DashboardView));
 
+            // Close the splash now that the main window is fully ready.
+            splash.Finish();
+
+            // Best-effort: check for updates on startup if the user has opted in.
+            // Fire-and-forget — don't delay startup if GitHub is slow.
+            if (config.CheckForUpdatesOnStartup)
+            {
+                _ = CheckForUpdatesOnStartupAsync(config, _serviceProvider);
+            }
+
             Log.Information("SysAdminX started successfully");
         }
         catch (Exception ex)
         {
+            splash.Finish();
             MessageBox.Show($"Fatal error during startup: {ex.Message}", "Startup Error", MessageBoxButton.OK, MessageBoxImage.Error);
             Current.Shutdown();
+        }
+    }
+
+    /// <summary>
+    /// Background update check fired from <see cref="OnStartup"/> when the
+    /// user has opted in. Surfaces a toast if a newer version is available.
+    /// </summary>
+    private static async System.Threading.Tasks.Task CheckForUpdatesOnStartupAsync(
+        AppConfigModel config,
+        IServiceProvider sp)
+    {
+        try
+        {
+            var updateSvc = sp.GetService(typeof(SysAdminX.Core.Interfaces.IUpdateCheckService))
+                as SysAdminX.Core.Interfaces.IUpdateCheckService;
+            var toastSvc = sp.GetService(typeof(SysAdminX.Core.Interfaces.IToastNotificationService))
+                as SysAdminX.Core.Interfaces.IToastNotificationService;
+            if (updateSvc == null || toastSvc == null) return;
+
+            var repo = string.IsNullOrWhiteSpace(config.UpdateRepository)
+                ? "ashwanisingh2/admintool"
+                : config.UpdateRepository;
+
+            var release = await updateSvc.GetLatestReleaseAsync(repo);
+            if (release == null) return;
+
+            var currentVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0.0.0.0";
+            if (updateSvc.IsNewerVersion(currentVersion, release.TagName))
+            {
+                toastSvc.ShowSuccess($"Update available: {release.TagName}",
+                    $"You have v{currentVersion}. Open Settings to see the release page.");
+            }
+        }
+        catch
+        {
+            // Update check failures should never crash startup.
         }
     }
 
@@ -125,6 +181,9 @@ public partial class App : Application
         services.AddSingleton<IRegistryService, RegistryService>();
         services.AddSingleton<IProcessExecutorService, ProcessExecutorService>();
         services.AddSingleton<SysAdminX.Core.Interfaces.ITrimService, SysAdminX.Infrastructure.Services.TrimService>();
+
+        // Update checker — hits GitHub releases to look for newer versions.
+        services.AddSingleton<SysAdminX.Core.Interfaces.IUpdateCheckService, SysAdminX.Infrastructure.Services.UpdateCheckService>();
 
         // Navigation
         services.AddSingleton<SysAdminX.Shell.Services.NavigationService>();
