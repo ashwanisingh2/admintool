@@ -90,7 +90,7 @@ public class OneClickCareService : IOneClickCareService
 
                 System.IO.File.Delete(tempScriptPath);
 
-                if (!result.IsSuccess || !result.Data)
+                if (!result.IsSuccess || !result.Value)
                 {
                     StepProgressChanged?.Invoke(this, new StepProgressEventArgs(step.Name, "failed", 0, result.ErrorMessage));
                     return; // stop the sequence

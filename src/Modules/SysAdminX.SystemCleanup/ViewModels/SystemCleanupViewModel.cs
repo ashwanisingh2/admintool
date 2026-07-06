@@ -161,8 +161,8 @@ public partial class SystemCleanupViewModel : ObservableObject
         DismProgress = 0;
         ErrorMessage = string.Empty;
 
-        var scriptResult = await _powerShellService.ExtractEmbeddedScriptAsync("component_cleanup.ps1");
-        if (!scriptResult.IsSuccess || string.IsNullOrEmpty(scriptResult.Value))
+        var scriptContent = await _powerShellService.ExtractEmbeddedScriptAsync("component_cleanup.ps1");
+        if (string.IsNullOrEmpty(scriptContent))
         {
             ErrorMessage = "Failed to load script.";
             IsDismRunning = false;
@@ -184,7 +184,7 @@ public partial class SystemCleanupViewModel : ObservableObject
             }
         };
 
-        var result = await _powerShellService.ExecuteStreamingAsync(scriptResult.Value, parameters, onOutput);
+        var result = await _powerShellService.ExecuteStreamingAsync(scriptContent, parameters, onOutput);
         
         if (result.IsSuccess)
         {
@@ -216,8 +216,8 @@ public partial class SystemCleanupViewModel : ObservableObject
         DismProgress = 0;
         ErrorMessage = string.Empty;
 
-        var scriptResult = await _powerShellService.ExtractEmbeddedScriptAsync("component_cleanup.ps1");
-        if (!scriptResult.IsSuccess || string.IsNullOrEmpty(scriptResult.Value))
+        var scriptContent = await _powerShellService.ExtractEmbeddedScriptAsync("component_cleanup.ps1");
+        if (string.IsNullOrEmpty(scriptContent))
         {
             ErrorMessage = "Failed to load script.";
             IsDismRunning = false;
@@ -237,7 +237,7 @@ public partial class SystemCleanupViewModel : ObservableObject
             }
         };
 
-        var result = await _powerShellService.ExecuteStreamingAsync(scriptResult.Value, parameters, onOutput);
+        var result = await _powerShellService.ExecuteStreamingAsync(scriptContent, parameters, onOutput);
         
         if (!result.IsSuccess)
         {

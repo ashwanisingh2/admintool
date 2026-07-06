@@ -52,7 +52,7 @@
         <Grid Visibility="{Binding HasError, Converter={StaticResource BoolToVis}}"
               Panel.ZIndex="5">
             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                <ui:SymbolIcon Symbol="ErrorCircle24" FontSize="48"
+                <ui:SymbolIcon Symbol="Warning24" FontSize="48"
                                Foreground="{DynamicResource SystemFillColorCriticalBrush}" />
                 <TextBlock Text="{Binding ErrorMessage}"
                            Margin="0,12,0,0"
@@ -112,7 +112,7 @@
                                ToolTip="Open Device Manager"
                                Command="{Binding LaunchDeviceManagerCommand}">
                         <StackPanel Orientation="Horizontal">
-                            <ui:SymbolIcon Symbol="WindowDevTools24" Margin="0,0,8,0" />
+                            <ui:SymbolIcon Symbol="Code24" Margin="0,0,8,0" />
                             <TextBlock Text="Device Manager" />
                         </StackPanel>
                     </ui:Button>
@@ -160,7 +160,7 @@
                                        Appearance="Primary"
                                        Command="{Binding RefreshCommand}">
                                 <StackPanel Orientation="Horizontal">
-                                    <ui:SymbolIcon Symbol="ArrowSync24" Margin="0,0,8,0" />
+                                    <ui:SymbolIcon Symbol="ArrowClockwise24" Margin="0,0,8,0" />
                                     <TextBlock Text="Scan Drivers" />
                                 </StackPanel>
                             </ui:Button>
@@ -220,7 +220,7 @@
                                                            Command="{Binding DataContext.RollbackDriverCommand, RelativeSource={RelativeSource AncestorType=Page}}"
                                                            CommandParameter="{Binding}"
                                                            Margin="0,0,4,0">
-                                                    <ui:SymbolIcon Symbol="ArrowUndo24" />
+                                                    <ui:SymbolIcon Symbol="ArrowCounterclockwise24" />
                                                 </ui:Button>
                                             </StackPanel>
                                         </DataTemplate>
@@ -377,3 +377,4 @@
     </Grid>
 
 </Page>
+

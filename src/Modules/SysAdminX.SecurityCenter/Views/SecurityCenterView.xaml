@@ -240,7 +240,7 @@
                         <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding UacStatus.IsEnabled}" VerticalAlignment="Center" Margin="0,0,0,12"/>
 
                         <!-- Consent Prompt -->
-                        <ui:SymbolIcon Grid.Row="1" Grid.Column="0" Symbol="PersonLock24" Foreground="{DynamicResource SystemFillColorNeutralBrush}" HorizontalAlignment="Left" />
+                        <ui:SymbolIcon Grid.Row="1" Grid.Column="0" Symbol="Shield24" Foreground="{DynamicResource SystemFillColorNeutralBrush}" HorizontalAlignment="Left" />
                         <TextBlock Grid.Row="1" Grid.Column="1" Text="Admin Prompt Behavior" VerticalAlignment="Center" FontWeight="SemiBold"/>
                         <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding UacStatus.ConsentPromptBehavior}" VerticalAlignment="Center"/>
                     </Grid>
@@ -311,3 +311,4 @@
         </ScrollViewer>
     </Grid>
 </Page>
+

@@ -56,7 +56,7 @@ public partial class PerformanceModeViewModel : ObservableObject
         {
             foreach (var profile in Profiles)
             {
-                profile.IsActive = profile.Id == result.Data;
+                profile.IsActive = profile.Id == result.Value;
             }
         }
     }

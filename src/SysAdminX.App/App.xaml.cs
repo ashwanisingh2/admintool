@@ -228,6 +228,7 @@ public partial class App : Application
         services.AddTransient<SysAdminX.OneClickCare.Views.OneClickCareView>();
 
         // Modules - Auto Pilot
+        services.AddSingleton<SysAdminX.AutoPilot.Services.IAutoPilotService, SysAdminX.AutoPilot.Services.AutoPilotService>();
         services.AddTransient<SysAdminX.AutoPilot.ViewModels.AutoPilotViewModel>();
         services.AddTransient<SysAdminX.AutoPilot.Views.AutoPilotView>();
 
@@ -247,18 +248,22 @@ public partial class App : Application
         services.AddTransient<SysAdminX.BrowserRepair.Views.BrowserRepairView>();
 
         // Modules - Performance Mode
+        services.AddSingleton<SysAdminX.PerformanceMode.Services.IPerformanceModeService, SysAdminX.PerformanceMode.Services.PerformanceModeService>();
         services.AddTransient<SysAdminX.PerformanceMode.ViewModels.PerformanceModeViewModel>();
         services.AddTransient<SysAdminX.PerformanceMode.Views.PerformanceModeView>();
 
         // Modules - Startup Manager
+        services.AddSingleton<SysAdminX.StartupManager.Services.IStartupManagerService, SysAdminX.StartupManager.Services.StartupManagerService>();
         services.AddTransient<SysAdminX.StartupManager.ViewModels.StartupManagerViewModel>();
         services.AddTransient<SysAdminX.StartupManager.Views.StartupManagerView>();
 
         // Modules - Large File Finder
+        services.AddSingleton<SysAdminX.LargeFileFinder.Services.ILargeFileFinderService, SysAdminX.LargeFileFinder.Services.LargeFileFinderService>();
         services.AddTransient<SysAdminX.LargeFileFinder.ViewModels.LargeFileFinderViewModel>();
         services.AddTransient<SysAdminX.LargeFileFinder.Views.LargeFileFinderView>();
 
         // Modules - Registry Manager
+        services.AddSingleton<SysAdminX.RegistryManager.Services.IRegistryManagerService, SysAdminX.RegistryManager.Services.RegistryManagerService>();
         services.AddTransient<SysAdminX.RegistryManager.ViewModels.RegistryManagerViewModel>();
         services.AddTransient<SysAdminX.RegistryManager.Views.RegistryManagerView>();
     }

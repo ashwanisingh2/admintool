@@ -68,7 +68,7 @@
               HorizontalAlignment="Center">
             <Border Background="{DynamicResource SystemFillColorSuccessBrush}" Padding="16,12" CornerRadius="4">
                 <StackPanel Orientation="Horizontal">
-                    <ui:SymbolIcon Symbol="CheckmarkCircle24" FontSize="20" Foreground="White" Margin="0,0,12,0" />
+                    <ui:SymbolIcon Symbol="Checkmark24" FontSize="20" Foreground="White" Margin="0,0,12,0" />
                     <TextBlock Text="{Binding SuccessMessage}"
                                FontSize="14"
                                Foreground="White"
@@ -81,7 +81,7 @@
         <Grid Visibility="{Binding HasError, Converter={StaticResource BoolToVis}}"
               Panel.ZIndex="5">
             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                <ui:SymbolIcon Symbol="ErrorCircle24" FontSize="48"
+                <ui:SymbolIcon Symbol="Warning24" FontSize="48"
                                Foreground="{DynamicResource SystemFillColorCriticalBrush}" />
                 <TextBlock Text="{Binding ErrorMessage}"
                            Margin="0,12,0,0"
@@ -130,7 +130,7 @@
                         <ui:Button Appearance="Primary"
                                    Command="{Binding RefreshCommand}">
                             <StackPanel Orientation="Horizontal">
-                                <ui:SymbolIcon Symbol="ArrowSync24" Margin="0,0,8,0" />
+                                <ui:SymbolIcon Symbol="ArrowClockwise24" Margin="0,0,8,0" />
                                 <TextBlock Text="Refresh" />
                             </StackPanel>
                         </ui:Button>
@@ -330,7 +330,7 @@
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <ui:SymbolIcon Symbol="Monitor24" FontSize="20" Margin="0,0,12,16" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                                <ui:SymbolIcon Symbol="Desktop24" FontSize="20" Margin="0,0,12,16" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
                                 <TextBlock Grid.Column="1" Text="GRAPHICS" Style="{StaticResource SectionHeader}" />
                             </Grid>
 
@@ -375,7 +375,7 @@
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <ui:SymbolIcon Symbol="Board24" FontSize="20" Margin="0,0,12,16" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                                <ui:SymbolIcon Symbol="Server24" FontSize="20" Margin="0,0,12,16" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
                                 <TextBlock Grid.Column="1" Text="MOTHERBOARD &amp; BIOS" Style="{StaticResource SectionHeader}" />
                             </Grid>
                             
@@ -518,7 +518,7 @@
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <ui:SymbolIcon Symbol="Flash24" FontSize="20" Margin="0,0,12,16" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                                <ui:SymbolIcon Symbol="Play24" FontSize="20" Margin="0,0,12,16" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
                                 <TextBlock Grid.Column="1" Text="STORAGE OPTIMIZATION" Style="{StaticResource SectionHeader}" />
                             </Grid>
                             
@@ -570,3 +570,4 @@
     </Grid>
 
 </Page>
+

@@ -35,7 +35,7 @@
             <TextBlock Grid.Column="1" Text="Min Size (MB):" VerticalAlignment="Center" Margin="0,0,8,0"/>
             <ui:NumberBox Grid.Column="2" Value="{Binding MinSizeMB}" Minimum="10" Maximum="10000" Width="120" Margin="0,0,16,0" />
 
-            <ui:Button Grid.Column="4" Content="Scan" Icon="{ui:SymbolIcon Search24}" Command="{Binding ScanCommand}" Appearance="Primary" IsEnabled="{Binding IsScanning, Converter={ui:InverseBooleanConverter}}"/>
+            <ui:Button Grid.Column="4" Content="Scan" Icon="{ui:SymbolIcon Search24}" Command="{Binding ScanCommand}" Appearance="Primary" />
         </Grid>
 
         <DataGrid Grid.Row="2" ItemsSource="{Binding Files}" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" HeadersVisibility="Column" SelectionMode="Extended">
@@ -62,7 +62,7 @@
             </Grid.ColumnDefinitions>
 
             <StackPanel Grid.Column="0" Orientation="Horizontal">
-                <ui:ProgressRing IsIndeterminate="True" Visibility="{Binding IsScanning, Converter={ui:BooleanToVisibilityConverter}}" Margin="0,0,8,0" Width="16" Height="16"/>
+                <ui:ProgressRing IsIndeterminate="True" Visibility="{Binding IsScanning, Converter={StaticResource BoolToVis}}" Margin="0,0,8,0" Width="16" Height="16"/>
                 <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center"/>
             </StackPanel>
 

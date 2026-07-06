@@ -42,9 +42,9 @@ public partial class AutoPilotViewModel : ObservableObject
     }
 
     [RelayCommand]
-    public async Task ScheduleAsync(string dayOfWeek, string time, AutoPilotActions actions)
+    public async Task ScheduleAsync()
     {
-        await _service.ScheduleAsync(dayOfWeek, time, actions);
+        await _service.ScheduleAsync("Sunday", "02:00", new AutoPilotActions());
         await RefreshStatusAsync();
     }
 

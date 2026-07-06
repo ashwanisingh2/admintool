@@ -137,7 +137,7 @@ public partial class BrowserRepairViewModel : ObservableObject
         if (result.IsSuccess)
         {
             Browsers.Clear();
-            foreach (var b in result.Data)
+            foreach (var b in result.Value)
             {
                 Browsers.Add(new BrowserViewModel(b, _service));
             }

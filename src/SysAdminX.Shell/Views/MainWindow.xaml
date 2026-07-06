@@ -43,9 +43,13 @@
     StateChanged="Window_StateChanged">
 
     <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
         <tb:TaskbarIcon
             x:Name="TrayIcon"
-            IconSource="/Resources/icon.ico"
             ToolTipText="SysAdminX"
             Visibility="Collapsed"
             TrayMouseDoubleClick="TrayIcon_TrayMouseDoubleClick">
@@ -56,10 +60,6 @@
                 </ContextMenu>
             </tb:TaskbarIcon.ContextMenu>
         </tb:TaskbarIcon>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
 
         <!-- Title Bar -->
         <ui:TitleBar

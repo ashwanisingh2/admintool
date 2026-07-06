@@ -97,11 +97,9 @@
                     <TextBlock Text="Cleanup completed. Undo available for " VerticalAlignment="Center" />
                     <TextBlock Text="{Binding UndoCountdown}" FontWeight="Bold" VerticalAlignment="Center" />
                     <TextBlock Text=" seconds." VerticalAlignment="Center" />
+                    <ui:Button Command="{Binding UndoCommand}" Content="Undo" Appearance="Secondary" Margin="16,0,0,0" />
                 </StackPanel>
             </ui:InfoBar.Message>
-            <ui:InfoBar.ActionButton>
-                <ui:Button Command="{Binding UndoCommand}" Content="Undo" Appearance="Secondary" Margin="16,0,0,0" />
-            </ui:InfoBar.ActionButton>
         </ui:InfoBar>
 
         <Grid Grid.Row="0" Grid.RowSpan="6" Background="#80000000" Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}">

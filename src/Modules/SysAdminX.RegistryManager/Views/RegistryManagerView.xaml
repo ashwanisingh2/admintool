@@ -12,6 +12,46 @@
     Title="Registry Manager">
 
     <Grid Margin="24">
-        <TextBlock Text="Registry Manager - Under Construction" FontSize="28" FontWeight="SemiBold" />
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="Registry Manager" FontSize="28" FontWeight="SemiBold" Margin="0,0,0,16" Grid.Row="0"/>
+
+        <!-- Header Actions -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,16">
+            <ui:TextBox PlaceholderText="Optional Label" Text="{Binding NewBackupLabel, UpdateSourceTrigger=PropertyChanged}" Width="200" Margin="0,0,8,0"/>
+            <ui:Button Content="Create New Backup" Command="{Binding CreateBackupCommand}" Appearance="Primary" Margin="0,0,8,0"/>
+            <ui:Button Content="Open Backup Folder" Command="{Binding OpenBackupFolderCommand}" />
+        </StackPanel>
+
+        <!-- Data Grid -->
+        <DataGrid Grid.Row="2" ItemsSource="{Binding Backups}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" HeadersVisibility="Column">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Date" Binding="{Binding CreatedAt, StringFormat=\{0:g\}}" Width="150" />
+                <DataGridTextColumn Header="Label" Binding="{Binding Label}" Width="*" />
+                <DataGridTextColumn Header="HKLM Size" Binding="{Binding HklmSizeBytes}" Width="100" />
+                <DataGridTextColumn Header="HKCU Size" Binding="{Binding HkcuSizeBytes}" Width="100" />
+                <DataGridTemplateColumn Header="Actions" Width="180">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <ui:Button Content="Restore" Command="{Binding DataContext.RestoreBackupCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}" Margin="0,0,8,0"/>
+                                <ui:Button Content="Delete" Command="{Binding DataContext.DeleteBackupCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}" Appearance="Danger"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <!-- Status Footer -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,16,0,0">
+            <ui:ProgressRing IsIndeterminate="True" Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,0,8,0" />
+            <TextBlock Text="{Binding StatusMessage}" VerticalAlignment="Center" />
+        </StackPanel>
     </Grid>
 </Page>

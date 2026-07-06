@@ -92,7 +92,7 @@
                                 <!-- ERROR Checkbox -->
                                 <CheckBox IsChecked="{Binding ShowError}" Margin="0,0,24,0">
                                     <StackPanel Orientation="Horizontal">
-                                        <ui:SymbolIcon Symbol="ErrorCircle24" Foreground="{DynamicResource SystemFillColorCriticalBrush}" Margin="0,0,4,0"/>
+                                        <ui:SymbolIcon Symbol="Warning24" Foreground="{DynamicResource SystemFillColorCriticalBrush}" Margin="0,0,4,0"/>
                                         <TextBlock Text="Error" />
                                     </StackPanel>
                                 </CheckBox>
@@ -253,3 +253,4 @@
         </TabControl>
     </Grid>
 </Page>
+

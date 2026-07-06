@@ -196,9 +196,9 @@ public partial class LogsViewerViewModel : ObservableObject
         try
         {
             var result = await _bsodAnalyzerService.AnalyzeDumpsAsync(ct);
-            if (result.IsSuccess && result.Data != null)
+            if (result.IsSuccess && result.Value != null)
             {
-                foreach (var entry in result.Data)
+                foreach (var entry in result.Value)
                 {
                     BsodEntries.Add(entry);
                 }

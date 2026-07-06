@@ -62,14 +62,14 @@ public partial class StartupManagerViewModel : ObservableObject
         try
         {
             var result = await _startupManagerService.GetStartupAppsAsync();
-            if (result.IsSuccess && result.Data != null)
+            if (result.IsSuccess && result.Value != null)
             {
                 foreach (var app in StartupApps)
                 {
                     app.PropertyChanged -= App_PropertyChanged;
                 }
                 StartupApps.Clear();
-                foreach (var app in result.Data.OrderBy(a => a.Name))
+                foreach (var app in result.Value.OrderBy(a => a.Name))
                 {
                     app.PropertyChanged += App_PropertyChanged;
                     StartupApps.Add(app);

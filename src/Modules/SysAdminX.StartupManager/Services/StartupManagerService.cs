@@ -40,11 +40,11 @@ public class StartupManagerService : IStartupManagerService
             if (!result.IsSuccess)
                 return Result<List<StartupAppModel>>.Failure(result.ErrorMessage);
 
-            if (string.IsNullOrWhiteSpace(result.Data))
+            if (string.IsNullOrWhiteSpace(result.Value))
                 return Result<List<StartupAppModel>>.Success(new List<StartupAppModel>());
 
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            var apps = JsonSerializer.Deserialize<List<StartupAppModel>>(result.Data, options);
+            var apps = JsonSerializer.Deserialize<List<StartupAppModel>>(result.Value, options);
 
             if (apps != null)
             {

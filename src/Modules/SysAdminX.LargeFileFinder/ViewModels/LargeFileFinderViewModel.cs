@@ -67,7 +67,7 @@ public partial class LargeFileFinderViewModel : ObservableObject
 
         if (result.IsSuccess)
         {
-            foreach (var file in result.Data)
+            foreach (var file in result.Value)
             {
                 Files.Add(file);
             }

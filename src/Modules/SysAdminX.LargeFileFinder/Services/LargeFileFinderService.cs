@@ -43,12 +43,12 @@ public class LargeFileFinderService : ILargeFileFinderService
                 return Result<List<LargeFileModel>>.Failure(result.ErrorMessage ?? "Failed to scan files.");
             }
 
-            if (string.IsNullOrWhiteSpace(result.Data))
+            if (string.IsNullOrWhiteSpace(result.Value))
             {
                 return Result<List<LargeFileModel>>.Success(new List<LargeFileModel>());
             }
 
-            var files = JsonSerializer.Deserialize<List<LargeFileModel>>(result.Data, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            var files = JsonSerializer.Deserialize<List<LargeFileModel>>(result.Value, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
             
             return Result<List<LargeFileModel>>.Success(files ?? new List<LargeFileModel>());
         }

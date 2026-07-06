@@ -55,11 +55,11 @@ public class BrowserRepairService : IBrowserRepairService
             
             if (!result.IsSuccess) return Result<List<BrowserRepairModel>>.Failure(result.ErrorMessage);
 
-            if (string.IsNullOrWhiteSpace(result.Data))
+            if (string.IsNullOrWhiteSpace(result.Value))
                 return Result<List<BrowserRepairModel>>.Success(new List<BrowserRepairModel>());
 
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            var browsers = JsonSerializer.Deserialize<List<BrowserRepairModel>>(result.Data, options);
+            var browsers = JsonSerializer.Deserialize<List<BrowserRepairModel>>(result.Value, options);
 
             return Result<List<BrowserRepairModel>>.Success(browsers ?? new List<BrowserRepairModel>());
         }

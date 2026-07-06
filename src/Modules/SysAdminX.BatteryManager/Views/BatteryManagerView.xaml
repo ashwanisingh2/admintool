@@ -34,7 +34,7 @@
         <Grid Visibility="{Binding HasError, Converter={StaticResource BoolToVis}}"
               Panel.ZIndex="5">
             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                <ui:SymbolIcon Symbol="ErrorCircle24" FontSize="48"
+                <ui:SymbolIcon Symbol="Warning24" FontSize="48"
                                Foreground="{DynamicResource SystemFillColorCriticalBrush}" />
                 <TextBlock Text="{Binding ErrorMessage}"
                            Margin="0,12,0,0"
@@ -113,7 +113,7 @@
                     <ui:Card Grid.Column="0" Margin="0,0,16,0" VerticalAlignment="Top" Width="400">
                         <StackPanel>
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
-                                <ui:SymbolIcon Symbol="Battery24" FontSize="24" Margin="0,0,12,0" Foreground="{DynamicResource SystemAccentColorPrimaryBrush}" />
+                                <ui:SymbolIcon Symbol="Info24" FontSize="24" Margin="0,0,12,0" Foreground="{DynamicResource SystemAccentColorPrimaryBrush}" />
                                 <TextBlock Text="Battery Health" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
                             </StackPanel>
 
@@ -208,3 +208,4 @@
         </Grid>
     </Grid>
 </Page>
+

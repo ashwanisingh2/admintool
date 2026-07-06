@@ -107,7 +107,7 @@ public partial class PrivacyCleanerViewModel : ObservableObject
             var result = await _service.ScanCategoryAsync(c.Id, CancellationToken.None);
             if (result.IsSuccess)
             {
-                c.EstimatedSizeBytes = result.Data;
+                c.EstimatedSizeBytes = result.Value;
             }
             c.IsScanning = false;
         });

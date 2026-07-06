@@ -56,13 +56,13 @@ public class BsodAnalyzerService : IBsodAnalyzerService
             // Read embedded script
             var scriptContent = await _powerShellService.ExtractEmbeddedScriptAsync("SysAdminX.Infrastructure.Scripts.analyze_bsod.ps1", ct);
             var result = await _powerShellService.ExecuteScriptContentAsync(scriptContent, null, ct);
-            if (!result.IsSuccess || string.IsNullOrWhiteSpace(result.Data))
+            if (!result.IsSuccess || string.IsNullOrWhiteSpace(result.Value))
             {
                 // Fallback to empty list
                 return Result<List<BsodEntryModel>>.Success(new List<BsodEntryModel>());
             }
 
-            var json = result.Data;
+            var json = result.Value;
             var entries = JsonSerializer.Deserialize<List<BsodEntryModel>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
             if (entries == null)
             {

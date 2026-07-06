@@ -31,7 +31,7 @@ public class PerformanceModeService : IPerformanceModeService
         
         if (result.IsSuccess)
         {
-            return Result<string>.Success(result.Data.Trim());
+            return Result<string>.Success(result.Value.Trim());
         }
         
         return Result<string>.Failure(result.ErrorMessage);

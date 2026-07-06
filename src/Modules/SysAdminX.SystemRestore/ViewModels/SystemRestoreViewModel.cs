@@ -52,14 +52,14 @@ public partial class SystemRestoreViewModel : ObservableObject
             var statusResult = await _systemRestoreService.IsProtectionEnabledAsync(CancellationToken.None);
             if (statusResult.IsSuccess)
             {
-                IsProtectionEnabled = statusResult.Data;
+                IsProtectionEnabled = statusResult.Value;
             }
 
             var pointsResult = await _systemRestoreService.ListPointsAsync(CancellationToken.None);
             if (pointsResult.IsSuccess)
             {
                 RestorePoints.Clear();
-                foreach (var point in pointsResult.Data)
+                foreach (var point in pointsResult.Value)
                 {
                     RestorePoints.Add(point);
                 }

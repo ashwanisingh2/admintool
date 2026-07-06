@@ -31,7 +31,7 @@ public class PrivacyCleanerService : IPrivacyCleanerService
             
             if (!result.IsSuccess) return Result<long>.Failure(result.ErrorMessage);
 
-            if (long.TryParse(result.Data.Trim(), out var size))
+            if (long.TryParse(result.Value.Trim(), out var size))
             {
                 return Result<long>.Success(size);
             }

@@ -39,7 +39,7 @@ public class SystemRestoreService : ISystemRestoreService
             var result = await _powerShellService.ExecuteScriptContentAsync(script, parameters, ct);
             if (!result.IsSuccess) return Result<bool>.Failure(result.ErrorMessage);
 
-            using var doc = JsonDocument.Parse(result.Data);
+            using var doc = JsonDocument.Parse(result.Value);
             return Result<bool>.Success(doc.RootElement.GetProperty("isEnabled").GetBoolean());
         }
         catch (Exception ex)
@@ -85,7 +85,7 @@ public class SystemRestoreService : ISystemRestoreService
             if (!result.IsSuccess) return Result<SystemRestorePoint>.Failure(result.ErrorMessage);
 
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            var point = JsonSerializer.Deserialize<SystemRestorePoint>(result.Data, options);
+            var point = JsonSerializer.Deserialize<SystemRestorePoint>(result.Value, options);
             
             if (point == null) return Result<SystemRestorePoint>.Failure("Failed to parse restore point data");
 
@@ -108,13 +108,13 @@ public class SystemRestoreService : ISystemRestoreService
             
             if (!result.IsSuccess) return Result<List<SystemRestorePoint>>.Failure(result.ErrorMessage);
             
-            if (string.IsNullOrWhiteSpace(result.Data))
+            if (string.IsNullOrWhiteSpace(result.Value))
             {
                 return Result<List<SystemRestorePoint>>.Success(new List<SystemRestorePoint>());
             }
 
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            var points = JsonSerializer.Deserialize<List<SystemRestorePoint>>(result.Data, options) ?? new List<SystemRestorePoint>();
+            var points = JsonSerializer.Deserialize<List<SystemRestorePoint>>(result.Value, options) ?? new List<SystemRestorePoint>();
             return Result<List<SystemRestorePoint>>.Success(points);
         }
         catch (Exception ex)
