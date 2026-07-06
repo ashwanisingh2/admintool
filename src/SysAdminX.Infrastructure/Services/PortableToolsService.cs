@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using SysAdminX.Core.Interfaces;
@@ -37,7 +38,7 @@ public class PortableToolsService : IPortableToolsService
         _logger = logger;
     }
 
-    public async Task<Result<IEnumerable<PortableToolModel>>> GetAvailableToolsAsync()
+    public async Task<Result<IEnumerable<PortableToolModel>>> GetAvailableToolsAsync(CancellationToken ct = default)
     {
         return await Task.Run(() =>
         {
@@ -62,7 +63,7 @@ public class PortableToolsService : IPortableToolsService
         });
     }
 
-    public async Task<Result<bool>> RunToolAsync(string toolId)
+    public async Task<Result<bool>> RunToolAsync(string toolId, CancellationToken ct = default)
     {
         try
         {
@@ -82,14 +83,14 @@ public class PortableToolsService : IPortableToolsService
                 }
 
                 using var client = new HttpClient();
-                var response = await client.GetAsync(tool.DownloadUrl);
+                var response = await client.GetAsync(tool.DownloadUrl, ct);
                 if (!response.IsSuccessStatusCode)
                 {
                     return Result<bool>.Failure($"Failed to download tool. Status code: {response.StatusCode}");
                 }
 
-                var bytes = await response.Content.ReadAsByteArrayAsync();
-                await File.WriteAllBytesAsync(exePath, bytes);
+                var bytes = await response.Content.ReadAsByteArrayAsync(ct);
+                await File.WriteAllBytesAsync(exePath, bytes, ct);
             }
 
             var startInfo = new ProcessStartInfo

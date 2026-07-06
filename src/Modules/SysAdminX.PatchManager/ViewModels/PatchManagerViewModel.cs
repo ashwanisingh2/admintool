@@ -164,7 +164,19 @@ public partial class PatchManagerViewModel : ObservableObject
                 (u.Description?.ToLowerInvariant().Contains(q) == true));
         }
 
-        Updates = new ObservableCollection<UpdateInfoModel>(filtered.OrderByDescending(u => u.InstalledOn));
+        // Sort by InstalledOn descending. InstalledOn is a free-form string
+        // (WMI returns either mm/dd/yyyy or a hex filetime), so we use
+        // DateTime.TryParse as a tiebreaker and fall back to ordinal string
+        // comparison for unparseable values. Null/empty strings sort last.
+        Updates = new ObservableCollection<UpdateInfoModel>(
+            filtered
+                .OrderByDescending(u =>
+                {
+                    if (string.IsNullOrWhiteSpace(u.InstalledOn)) return DateTime.MinValue;
+                    return DateTime.TryParse(u.InstalledOn, out var d) ? d : DateTime.MinValue;
+                })
+                .ThenByDescending(u => u.InstalledOn ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(u => u.HotFixId ?? string.Empty, StringComparer.OrdinalIgnoreCase));
     }
 
     [RelayCommand]

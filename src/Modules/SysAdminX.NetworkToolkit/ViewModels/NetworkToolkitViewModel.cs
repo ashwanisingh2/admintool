@@ -64,15 +64,30 @@ public partial class NetworkToolkitViewModel : ObservableObject
         Adapters.Clear();
         Connections.Clear();
 
-        var tasks = new[]
+        try
         {
-            LoadAdaptersAsync(ct),
-            LoadConnectionsAsync(ct)
-        };
+            var tasks = new[]
+            {
+                LoadAdaptersAsync(ct),
+                LoadConnectionsAsync(ct)
+            };
 
-        await Task.WhenAll(tasks);
-
-        IsLoading = false;
+            await Task.WhenAll(tasks);
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("Network toolkit init cancelled.");
+        }
+        catch (System.Exception ex)
+        {
+            _logger.LogError(ex, "Failed to initialize Network Toolkit");
+            HasError = true;
+            ErrorMessage = ex.Message;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
     [RelayCommand]
@@ -157,21 +172,36 @@ public partial class NetworkToolkitViewModel : ObservableObject
         IsScanning = true;
         ScanResults.Clear();
 
-        var result = await _networkService.PortScanAsync(ScannerTarget, ScannerStartPort, ScannerEndPort, ct);
-        if (result.IsSuccess && result.Value != null)
+        try
         {
-            foreach (var r in result.Value)
+            var result = await _networkService.PortScanAsync(ScannerTarget, ScannerStartPort, ScannerEndPort, ct);
+            if (result.IsSuccess && result.Value != null)
             {
-                ScanResults.Add(r);
+                foreach (var r in result.Value)
+                {
+                    ScanResults.Add(r);
+                }
+            }
+            else
+            {
+                HasError = true;
+                ErrorMessage = result.ErrorMessage ?? "Port scan failed";
             }
         }
-        else
+        catch (OperationCanceledException)
         {
-            HasError = true;
-            ErrorMessage = result.ErrorMessage ?? "Port scan failed";
+            _logger.LogInformation("Port scan cancelled.");
         }
-
-        IsScanning = false;
+        catch (System.Exception ex)
+        {
+            _logger.LogError(ex, "Port scan threw an exception.");
+            HasError = true;
+            ErrorMessage = ex.Message;
+        }
+        finally
+        {
+            IsScanning = false;
+        }
     }
 
     [ObservableProperty]
@@ -187,13 +217,29 @@ public partial class NetworkToolkitViewModel : ObservableObject
     public async Task SendWakeOnLanAsync(CancellationToken ct)
     {
         IsSendingWol = true;
-        var result = await _networkService.WakeOnLanAsync(WolMacAddress, ct);
-        if (!result.IsSuccess)
+        try
         {
-            HasError = true;
-            ErrorMessage = result.ErrorMessage ?? "Failed to send WOL packet.";
+            var result = await _networkService.WakeOnLanAsync(WolMacAddress, ct);
+            if (!result.IsSuccess)
+            {
+                HasError = true;
+                ErrorMessage = result.ErrorMessage ?? "Failed to send WOL packet.";
+            }
         }
-        IsSendingWol = false;
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("WOL send cancelled.");
+        }
+        catch (System.Exception ex)
+        {
+            _logger.LogError(ex, "WOL send threw an exception.");
+            HasError = true;
+            ErrorMessage = ex.Message;
+        }
+        finally
+        {
+            IsSendingWol = false;
+        }
     }
 
     [ObservableProperty]
@@ -214,21 +260,36 @@ public partial class NetworkToolkitViewModel : ObservableObject
         IsPingSweeping = true;
         PingSweepResults.Clear();
 
-        var result = await _networkService.PingSweepAsync(PingSweepBaseIP, ct);
-        if (result.IsSuccess && result.Value != null)
+        try
         {
-            foreach (var r in result.Value)
+            var result = await _networkService.PingSweepAsync(PingSweepBaseIP, ct);
+            if (result.IsSuccess && result.Value != null)
             {
-                PingSweepResults.Add(r);
+                foreach (var r in result.Value)
+                {
+                    PingSweepResults.Add(r);
+                }
+            }
+            else
+            {
+                HasError = true;
+                ErrorMessage = result.ErrorMessage ?? "Ping sweep failed";
             }
         }
-        else
+        catch (OperationCanceledException)
         {
-            HasError = true;
-            ErrorMessage = result.ErrorMessage ?? "Ping sweep failed";
+            _logger.LogInformation("Ping sweep cancelled.");
         }
-
-        IsPingSweeping = false;
+        catch (System.Exception ex)
+        {
+            _logger.LogError(ex, "Ping sweep threw an exception.");
+            HasError = true;
+            ErrorMessage = ex.Message;
+        }
+        finally
+        {
+            IsPingSweeping = false;
+        }
     }
 
     [ObservableProperty]

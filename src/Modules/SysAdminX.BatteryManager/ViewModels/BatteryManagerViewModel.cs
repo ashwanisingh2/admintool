@@ -18,11 +18,20 @@ using SysAdminX.Core.Interfaces;
 
 namespace SysAdminX.BatteryManager.ViewModels;
 
+/// <summary>
+/// ViewModel for the Battery Manager module.
+///
+/// Improvements applied:
+///   - Constructor now requires IToastNotificationService so GenerateReport
+///     and GenerateDetailedReport can surface success / failure as a toast
+///     instead of (or in addition to) the inline ErrorMessage.
+/// </summary>
 public partial class BatteryManagerViewModel : ObservableObject
 {
     private readonly ILogger<BatteryManagerViewModel> _logger;
     private readonly IBatteryManagerService _batteryService;
     private readonly IProcessExecutorService _processExecutorService;
+    private readonly IToastNotificationService _toastService;
 
     [ObservableProperty]
     private BatteryInfoModel? _batteryInfo;
@@ -36,11 +45,16 @@ public partial class BatteryManagerViewModel : ObservableObject
     [ObservableProperty]
     private string _errorMessage = string.Empty;
 
-    public BatteryManagerViewModel(ILogger<BatteryManagerViewModel> logger, IBatteryManagerService batteryService, IProcessExecutorService processExecutorService)
+    public BatteryManagerViewModel(
+        ILogger<BatteryManagerViewModel> logger,
+        IBatteryManagerService batteryService,
+        IProcessExecutorService processExecutorService,
+        IToastNotificationService toastService)
     {
         _logger = logger;
         _batteryService = batteryService;
         _processExecutorService = processExecutorService;
+        _toastService = toastService;
     }
 
     [RelayCommand]
@@ -52,19 +66,34 @@ public partial class BatteryManagerViewModel : ObservableObject
         HasError = false;
         ErrorMessage = string.Empty;
 
-        var result = await _batteryService.GetBatteryInfoAsync(ct);
+        try
+        {
+            var result = await _batteryService.GetBatteryInfoAsync(ct);
 
-        if (result.IsSuccess)
-        {
-            BatteryInfo = result.Value;
+            if (result.IsSuccess)
+            {
+                BatteryInfo = result.Value;
+            }
+            else
+            {
+                HasError = true;
+                ErrorMessage = result.ErrorMessage ?? "Failed to query battery information.";
+            }
         }
-        else
+        catch (OperationCanceledException)
         {
+            _logger.LogInformation("Battery init cancelled.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Battery init threw an exception.");
             HasError = true;
-            ErrorMessage = result.ErrorMessage ?? "Failed to query battery information.";
+            ErrorMessage = ex.Message;
         }
-
-        IsLoading = false;
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
     [RelayCommand]
@@ -77,10 +106,11 @@ public partial class BatteryManagerViewModel : ObservableObject
         {
             IsLoading = true;
             string dest = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "SysAdminX_Reports");
-            
+
             var result = await _batteryService.GenerateBatteryReportAsync(dest, ct);
             if (result.IsSuccess && System.IO.File.Exists(result.Value))
             {
+                _toastService.ShowSuccess("Battery report generated", result.Value);
                 // Open the report
                 System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
                 {
@@ -92,12 +122,14 @@ public partial class BatteryManagerViewModel : ObservableObject
             {
                 HasError = true;
                 ErrorMessage = result.ErrorMessage ?? "Failed to generate report.";
+                _toastService.ShowError("Battery report failed", ErrorMessage);
             }
         }
         catch (Exception ex)
         {
             HasError = true;
             ErrorMessage = ex.Message;
+            _toastService.ShowError("Battery report failed", ex.Message);
         }
         finally
         {
@@ -112,10 +144,11 @@ public partial class BatteryManagerViewModel : ObservableObject
         {
             IsLoading = true;
             string tempFile = Path.Combine(Path.GetTempPath(), "battery_report.html");
-            
+
             var result = await _processExecutorService.ExecuteAsync("powercfg", $"/batteryreport /output \"{tempFile}\"", requireElevation: false, ct);
             if (result.IsSuccess && System.IO.File.Exists(tempFile))
             {
+                _toastService.ShowSuccess("Detailed battery report generated", tempFile);
                 // Open the report
                 System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
                 {
@@ -127,12 +160,14 @@ public partial class BatteryManagerViewModel : ObservableObject
             {
                 HasError = true;
                 ErrorMessage = result.ErrorMessage ?? "Failed to generate detailed report.";
+                _toastService.ShowError("Detailed battery report failed", ErrorMessage);
             }
         }
         catch (Exception ex)
         {
             HasError = true;
             ErrorMessage = ex.Message;
+            _toastService.ShowError("Detailed battery report failed", ex.Message);
         }
         finally
         {

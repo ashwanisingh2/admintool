@@ -15,6 +15,9 @@
             
             <converters:InverseBooleanConverter x:Key="InverseBoolConverter" xmlns:converters="clr-namespace:SysAdminX.App.Converters" />
             <converters:CapitalizeStringConverter x:Key="CapitalizeConverter" xmlns:converters="clr-namespace:SysAdminX.App.Converters" />
+            <converters:NullToBoolConverter x:Key="NullToBoolConverter" xmlns:converters="clr-namespace:SysAdminX.App.Converters" />
+            <converters:StringToBoolConverter x:Key="StringToBoolConverter" xmlns:converters="clr-namespace:SysAdminX.App.Converters" />
+            <BooleanToVisibilityConverter x:Key="BoolToVis" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

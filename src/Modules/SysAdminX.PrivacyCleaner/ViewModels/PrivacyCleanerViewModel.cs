@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Logging;
 using SysAdminX.Core.Interfaces;
 using SysAdminX.Core.Models;
 
@@ -26,15 +27,15 @@ public partial class PrivacyCategoryViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isScanning;
-    
+
     [ObservableProperty]
     private bool _isCleaning;
-    
+
     [ObservableProperty]
     private bool _isCleaned;
 
     public string SizeString => IsCleaned ? "Cleaned" : (EstimatedSizeBytes > 0 ? $"{EstimatedSizeBytes / 1024.0 / 1024.0:F2} MB" : "0 MB");
-    
+
     partial void OnEstimatedSizeBytesChanged(long value)
     {
         OnPropertyChanged(nameof(SizeString));
@@ -45,9 +46,22 @@ public partial class PrivacyCategoryViewModel : ObservableObject
     }
 }
 
+/// <summary>
+/// Top-level view model for the Privacy Cleaner module.
+///
+/// Improvements applied:
+///   - ScanAsync and CleanSelectedAsync now wrapped in try/finally so an
+///     exception can no longer leave IsScanning / IsCleaning stuck on.
+///   - Final "Selected categories have been cleaned." MessageBox replaced
+///     with a toast notification so the UI thread is no longer blocked.
+///   - The "Confirm Clean" MessageBox is kept because it's a destructive
+///     confirmation that genuinely needs a yes/no answer.
+/// </summary>
 public partial class PrivacyCleanerViewModel : ObservableObject
 {
     private readonly IPrivacyCleanerService _service;
+    private readonly IToastNotificationService _toastService;
+    private readonly ILogger<PrivacyCleanerViewModel> _logger;
 
     public ObservableCollection<PrivacyCategoryViewModel> Categories { get; } = new();
 
@@ -57,17 +71,22 @@ public partial class PrivacyCleanerViewModel : ObservableObject
     [ObservableProperty]
     private bool _isCleaning;
 
-    public PrivacyCleanerViewModel(IPrivacyCleanerService service)
+    public PrivacyCleanerViewModel(
+        IPrivacyCleanerService service,
+        IToastNotificationService toastService,
+        ILogger<PrivacyCleanerViewModel> logger)
     {
-        _service = service;
-        
+        _service = service ?? throw new ArgumentNullException(nameof(service));
+        _toastService = toastService ?? throw new ArgumentNullException(nameof(toastService));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
         InitializeCategories();
 
         ScanCommand = new AsyncRelayCommand(ScanAsync, () => !IsScanning && !IsCleaning);
         CleanSelectedCommand = new AsyncRelayCommand(CleanSelectedAsync, () => !IsScanning && !IsCleaning && Categories.Any(c => c.IsSelected));
         SelectAllCommand = new RelayCommand(SelectAll);
         SelectNoneCommand = new RelayCommand(SelectNone);
-        
+
         foreach(var c in Categories)
         {
             c.PropertyChanged += (s, e) => {
@@ -100,23 +119,48 @@ public partial class PrivacyCleanerViewModel : ObservableObject
         ScanCommand.NotifyCanExecuteChanged();
         CleanSelectedCommand.NotifyCanExecuteChanged();
 
-        var tasks = Categories.Select(async c =>
+        try
         {
-            c.IsScanning = true;
-            c.IsCleaned = false;
-            var result = await _service.ScanCategoryAsync(c.Id, CancellationToken.None);
-            if (result.IsSuccess)
+            // Scan all categories in parallel — each one runs an independent
+            // file-system enumeration, so parallelizing cuts total scan time
+            // from O(N) to O(1) on multi-core machines.
+            var tasks = Categories.Select(async c =>
             {
-                c.EstimatedSizeBytes = result.Value;
-            }
-            c.IsScanning = false;
-        });
+                c.IsScanning = true;
+                c.IsCleaned = false;
+                try
+                {
+                    var result = await _service.ScanCategoryAsync(c.Id, CancellationToken.None);
+                    if (result.IsSuccess)
+                    {
+                        c.EstimatedSizeBytes = result.Value;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Scan failed for category {Category}", c.Id);
+                }
+                finally
+                {
+                    c.IsScanning = false;
+                }
+            });
 
-        await Task.WhenAll(tasks);
-
-        IsScanning = false;
-        ScanCommand.NotifyCanExecuteChanged();
-        CleanSelectedCommand.NotifyCanExecuteChanged();
+            await Task.WhenAll(tasks);
+            _toastService.ShowSuccess("Privacy scan complete",
+                $"Scanned {Categories.Count} categories.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Privacy scan threw an exception.");
+            _toastService.ShowError("Privacy scan failed", ex.Message);
+        }
+        finally
+        {
+            IsScanning = false;
+            ScanCommand.NotifyCanExecuteChanged();
+            CleanSelectedCommand.NotifyCanExecuteChanged();
+        }
     }
 
     private async Task CleanSelectedAsync()
@@ -124,33 +168,63 @@ public partial class PrivacyCleanerViewModel : ObservableObject
         var toClean = Categories.Where(c => c.IsSelected && !c.IsCleaned).ToList();
         if (!toClean.Any()) return;
 
-        var result = MessageBox.Show($"Are you sure you want to clean {toClean.Count} categories?", "Confirm Clean", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+        // Destructive confirmation — kept as a MessageBox because we genuinely
+        // need the user's yes/no answer before deleting.
+        var result = MessageBox.Show(
+            $"Are you sure you want to clean {toClean.Count} categories?",
+            "Confirm Clean",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
         if (result != MessageBoxResult.Yes) return;
 
         IsCleaning = true;
         ScanCommand.NotifyCanExecuteChanged();
         CleanSelectedCommand.NotifyCanExecuteChanged();
 
-        var tasks = toClean.Select(async c =>
+        try
         {
-            c.IsCleaning = true;
-            var cleanResult = await _service.CleanCategoryAsync(c.Id, CancellationToken.None);
-            if (cleanResult.IsSuccess)
+            var tasks = toClean.Select(async c =>
             {
-                c.EstimatedSizeBytes = 0;
-                c.IsCleaned = true;
-                c.IsSelected = false;
-            }
-            c.IsCleaning = false;
-        });
+                c.IsCleaning = true;
+                try
+                {
+                    var cleanResult = await _service.CleanCategoryAsync(c.Id, CancellationToken.None);
+                    if (cleanResult.IsSuccess)
+                    {
+                        c.EstimatedSizeBytes = 0;
+                        c.IsCleaned = true;
+                        c.IsSelected = false;
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Clean failed for category {Category}: {Error}", c.Id, cleanResult.ErrorMessage);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Clean threw an exception for category {Category}", c.Id);
+                }
+                finally
+                {
+                    c.IsCleaning = false;
+                }
+            });
 
-        await Task.WhenAll(tasks);
-
-        IsCleaning = false;
-        ScanCommand.NotifyCanExecuteChanged();
-        CleanSelectedCommand.NotifyCanExecuteChanged();
-        
-        MessageBox.Show("Selected categories have been cleaned.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            await Task.WhenAll(tasks);
+            _toastService.ShowSuccess("Privacy clean complete",
+                $"Cleaned {toClean.Count(c => c.IsCleaned)} of {toClean.Count} selected categories.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Privacy clean threw an exception.");
+            _toastService.ShowError("Privacy clean failed", ex.Message);
+        }
+        finally
+        {
+            IsCleaning = false;
+            ScanCommand.NotifyCanExecuteChanged();
+            CleanSelectedCommand.NotifyCanExecuteChanged();
+        }
     }
 
     private void SelectAll()
@@ -163,3 +237,4 @@ public partial class PrivacyCleanerViewModel : ObservableObject
         foreach (var c in Categories) c.IsSelected = false;
     }
 }
+

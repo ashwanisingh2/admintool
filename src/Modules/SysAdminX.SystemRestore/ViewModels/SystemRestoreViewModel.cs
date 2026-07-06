@@ -5,14 +5,27 @@ using System.Threading.Tasks;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Logging;
 using SysAdminX.Core.Interfaces;
 using SysAdminX.Core.Models;
 
 namespace SysAdminX.SystemRestore.ViewModels;
 
+/// <summary>
+/// ViewModel for the System Restore module.
+///
+/// Improvements applied:
+///   - All MessageBox.Show calls (except the restore-point launcher) replaced
+///     with toast notifications so the UI thread is no longer blocked.
+///   - Top-level try/catch added to LoadDataAsync so a thrown exception can
+///     no longer crash the page.
+///   - IToastNotificationService injected.
+/// </summary>
 public partial class SystemRestoreViewModel : ObservableObject
 {
     private readonly ISystemRestoreService _systemRestoreService;
+    private readonly IToastNotificationService _toastService;
+    private readonly ILogger<SystemRestoreViewModel> _logger;
 
     [ObservableProperty]
     private bool _isProtectionEnabled;
@@ -25,9 +38,15 @@ public partial class SystemRestoreViewModel : ObservableObject
 
     public ObservableCollection<SystemRestorePoint> RestorePoints { get; } = new();
 
-    public SystemRestoreViewModel(ISystemRestoreService systemRestoreService)
+    public SystemRestoreViewModel(
+        ISystemRestoreService systemRestoreService,
+        IToastNotificationService toastService,
+        ILogger<SystemRestoreViewModel> logger)
     {
-        _systemRestoreService = systemRestoreService;
+        _systemRestoreService = systemRestoreService ?? throw new ArgumentNullException(nameof(systemRestoreService));
+        _toastService = toastService ?? throw new ArgumentNullException(nameof(toastService));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
         LoadDataCommand = new AsyncRelayCommand(LoadDataAsync);
         EnableProtectionCommand = new AsyncRelayCommand(EnableProtectionAsync);
         CreatePointCommand = new AsyncRelayCommand(CreatePointAsync, () => !string.IsNullOrWhiteSpace(NewPointDescription) && !IsLoading);
@@ -46,6 +65,7 @@ public partial class SystemRestoreViewModel : ObservableObject
 
     private async Task LoadDataAsync()
     {
+        if (IsLoading) return;
         IsLoading = true;
         try
         {
@@ -56,7 +76,7 @@ public partial class SystemRestoreViewModel : ObservableObject
             }
 
             var pointsResult = await _systemRestoreService.ListPointsAsync(CancellationToken.None);
-            if (pointsResult.IsSuccess)
+            if (pointsResult.IsSuccess && pointsResult.Value != null)
             {
                 RestorePoints.Clear();
                 foreach (var point in pointsResult.Value)
@@ -64,6 +84,11 @@ public partial class SystemRestoreViewModel : ObservableObject
                     RestorePoints.Add(point);
                 }
             }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load System Restore data.");
+            _toastService.ShowError("Failed to load restore points", ex.Message);
         }
         finally
         {
@@ -79,13 +104,18 @@ public partial class SystemRestoreViewModel : ObservableObject
             var result = await _systemRestoreService.EnableProtectionAsync("C:\\", CancellationToken.None);
             if (result.IsSuccess)
             {
-                MessageBox.Show("System Protection has been enabled on drive C:\\", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                _toastService.ShowSuccess("System Protection enabled", "Drive C:\\ is now protected.");
                 await LoadDataAsync();
             }
             else
             {
-                MessageBox.Show($"Failed to enable System Protection: {result.ErrorMessage}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                _toastService.ShowError("Failed to enable System Protection", result.ErrorMessage ?? "Unknown error.");
             }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Enable protection threw an exception.");
+            _toastService.ShowError("Failed to enable System Protection", ex.Message);
         }
         finally
         {
@@ -101,14 +131,19 @@ public partial class SystemRestoreViewModel : ObservableObject
             var result = await _systemRestoreService.CreatePointAsync(NewPointDescription, CancellationToken.None);
             if (result.IsSuccess)
             {
-                MessageBox.Show("Restore point created successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                _toastService.ShowSuccess("Restore point created", NewPointDescription);
                 NewPointDescription = string.Empty;
                 await LoadDataAsync();
             }
             else
             {
-                MessageBox.Show($"Failed to create restore point: {result.ErrorMessage}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                _toastService.ShowError("Failed to create restore point", result.ErrorMessage ?? "Unknown error.");
             }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Create restore point threw an exception.");
+            _toastService.ShowError("Failed to create restore point", ex.Message);
         }
         finally
         {
@@ -119,10 +154,18 @@ public partial class SystemRestoreViewModel : ObservableObject
 
     private async Task RestorePointAsync()
     {
-        var result = await _systemRestoreService.RestoreToPointAsync(0, CancellationToken.None);
-        if (!result.IsSuccess)
+        try
         {
-            MessageBox.Show($"Failed to launch System Restore: {result.ErrorMessage}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            var result = await _systemRestoreService.RestoreToPointAsync(0, CancellationToken.None);
+            if (!result.IsSuccess)
+            {
+                _toastService.ShowError("Failed to launch System Restore", result.ErrorMessage ?? "Unknown error.");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Restore point launch threw an exception.");
+            _toastService.ShowError("Failed to launch System Restore", ex.Message);
         }
     }
 }

@@ -25,9 +25,10 @@
 
         <TextBlock Grid.Row="0" Text="Software Manager" FontSize="28" FontWeight="SemiBold" Margin="0,0,0,16" />
 
-        <ui:InfoBar 
+        <ui:InfoBar
             Grid.Row="1"
-            IsOpen="{Binding ErrorMessage, Converter={StaticResource BoolToVis}}"
+            IsOpen="{Binding ErrorMessage, Converter={StaticResource StringToBoolConverter}}"
+            Title="Error"
             Message="{Binding ErrorMessage}"
             Severity="Error"
             Margin="0,0,0,16" />
@@ -74,7 +75,7 @@
             </DataGrid.Columns>
         </ui:DataGrid>
 
-                    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,16,0,0" HorizontalAlignment="Right" IsEnabled="{Binding SelectedSoftware, Converter={StaticResource BoolToVis}}">
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,16,0,0" HorizontalAlignment="Right" IsEnabled="{Binding SelectedSoftware, Converter={StaticResource NullToBoolConverter}}">
                         <ui:Button Command="{Binding UninstallCommand}" Content="Uninstall" Icon="{ui:SymbolIcon Delete24}" Appearance="Danger" />
                     </StackPanel>
                 </Grid>
