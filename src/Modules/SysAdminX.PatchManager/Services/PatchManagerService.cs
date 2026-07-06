@@ -13,6 +13,8 @@ using Microsoft.Extensions.Logging;
 using SysAdminX.Core.Interfaces;
 using SysAdminX.Core.Models;
 
+using UpdateInfoModel = SysAdminX.Core.Models.UpdateInfoModel;
+
 namespace SysAdminX.PatchManager.Services;
 
 /// <summary>

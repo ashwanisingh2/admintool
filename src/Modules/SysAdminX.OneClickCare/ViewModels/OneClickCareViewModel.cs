@@ -17,6 +17,9 @@ public partial class StepViewModel : ObservableObject
     public string Action { get; set; } = string.Empty;
 
     [ObservableProperty]
+    private bool _isSelected = true;
+
+    [ObservableProperty]
     private int _progress;
 
     [ObservableProperty]
@@ -31,17 +34,6 @@ public partial class StepViewModel : ObservableObject
 
 /// <summary>
 /// ViewModel for the One-Click Care module.
-///
-/// Improvements applied:
-///   - The internal <see cref="CancellationTokenSource"/> is now disposed
-///     after each run, preventing leaks across repeated runs.
-///   - Completion / failure notifications go through the toast service
-///     instead of a modal <see cref="MessageBox"/>, which previously blocked
-///     the UI thread for users who had switched tabs.
-///   - <see cref="StartCareAsync"/> is wrapped in try/finally so an exception
-///     inside the service cannot leave <see cref="IsRunning"/> stuck on.
-///   - Defensive null-checks on the event handler so a step event for an
-///     unknown step name is logged instead of silently swallowed.
 /// </summary>
 public partial class OneClickCareViewModel : ObservableObject
 {
@@ -91,8 +83,6 @@ public partial class OneClickCareViewModel : ObservableObject
 
     private void OnStepProgressChanged(object? sender, StepProgressEventArgs e)
     {
-        // Always marshal onto the UI thread — the service may raise this from
-        // a background worker thread.
         Application.Current?.Dispatcher.Invoke(() =>
         {
             if (e == null) return;
@@ -108,8 +98,6 @@ public partial class OneClickCareViewModel : ObservableObject
                 return;
             }
 
-            // Find the matching step (avoid LINQ to keep allocations down —
-            // this event fires many times per second during a care run).
             StepViewModel? step = null;
             foreach (var s in Steps)
             {
@@ -162,12 +150,18 @@ public partial class OneClickCareViewModel : ObservableObject
 
     private async Task StartCareAsync()
     {
-        // Reset state and dispose any previous CTS so we don't accumulate
-        // unlinked token sources across repeated runs.
         _cts?.Dispose();
         _cts = new CancellationTokenSource();
 
-        InitializeSteps();
+        // Reset progress and status instead of re-initializing to keep user selection
+        foreach (var step in Steps)
+        {
+            step.Progress = 0;
+            step.StatusIcon = "Circle24";
+            step.Output = string.Empty;
+            step.EstimatedTimeRemaining = string.Empty;
+        }
+
         IsRunning = true;
         IsComplete = false;
         StartCareCommand.NotifyCanExecuteChanged();
@@ -178,7 +172,16 @@ public partial class OneClickCareViewModel : ObservableObject
             var careSteps = new System.Collections.Generic.List<CareStepModel>();
             foreach (var s in Steps)
             {
-                careSteps.Add(new CareStepModel { Name = s.Name, Action = s.Action });
+                if (s.IsSelected)
+                {
+                    careSteps.Add(new CareStepModel { Name = s.Name, Action = s.Action });
+                }
+            }
+
+            if (careSteps.Count == 0)
+            {
+                _toastService.ShowWarning("No steps selected", "Please select at least one step to run.");
+                return;
             }
 
             await Task.Run(() => _service.RunCareSequenceAsync(careSteps, _cts.Token), _cts.Token);
@@ -209,7 +212,6 @@ public partial class OneClickCareViewModel : ObservableObject
         }
         catch (ObjectDisposedException)
         {
-            // Already disposed — nothing to cancel.
         }
     }
 }

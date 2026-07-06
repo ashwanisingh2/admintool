@@ -192,7 +192,7 @@ public partial class App : Application
 
         // WPF-UI snackbar service — registered as a singleton so every
         // ViewModel that asks for ISnackbarService gets the same instance.
-        services.AddSingleton<Wpf.Ui.Controls.ISnackbarService, Wpf.Ui.Controls.SnackbarService>();
+        services.AddSingleton<Wpf.Ui.ISnackbarService, Wpf.Ui.SnackbarService>();
 
         // Cross-module toast notification (must be singleton so the snackbar
         // service can be attached once after the main window is created).

@@ -43,7 +43,7 @@
             <!-- Spinner + loading text -->
             <StackPanel Grid.Row="2" Orientation="Horizontal" VerticalAlignment="Bottom">
                 <ui:ProgressRing IsIndeterminate="True" Width="20" Height="20" />
-                <TextBlock x:Name="LoadingText"
+                <TextBlock x:Name="LoadingText" x:FieldModifier="public"
                            Text="Initializing services..."
                            FontSize="12"
                            Margin="8,0,0,0"

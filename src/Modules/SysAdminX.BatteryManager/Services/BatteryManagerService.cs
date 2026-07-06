@@ -49,37 +49,44 @@ public class BatteryManagerService : IBatteryManagerService
                 return Result<BatteryInfoModel>.Failure("No battery found on this system.");
             }
 
-            // You can query MSBatteryClass_FullChargeCapacity to get real capacities in mWh
-            // Note: MSBatteryClass_* classes are in root\wmi namespace, not root\cimv2
-            var fullCapResult = await _wmiService.QueryAsync(@"root\wmi", "SELECT * FROM MSBatteryClass_FullChargeCapacity", ct);
-            if (fullCapResult.IsSuccess && fullCapResult.Value?.Count > 0)
+            try
             {
-                var dict = fullCapResult.Value[0];
-                if (dict.TryGetValue("FullChargeCapacity", out var val) && uint.TryParse(val?.ToString(), out uint cap))
+                // You can query MSBatteryClass_FullChargeCapacity to get real capacities in mWh
+                // Note: MSBatteryClass_* classes are in root\wmi namespace, not root\cimv2
+                var fullCapResult = await _wmiService.QueryAsync(@"root\wmi", "SELECT * FROM MSBatteryClass_FullChargeCapacity", ct);
+                if (fullCapResult.IsSuccess && fullCapResult.Value?.Count > 0)
                 {
-                    model.FullChargeCapacity = cap;
+                    var dict = fullCapResult.Value[0];
+                    if (dict.TryGetValue("FullChargeCapacity", out var val) && uint.TryParse(val?.ToString(), out uint cap))
+                    {
+                        model.FullChargeCapacity = cap;
+                    }
+                }
+
+                var designedCapResult = await _wmiService.QueryAsync(@"root\wmi", "SELECT * FROM MSBatteryClass_StaticData", ct);
+                if (designedCapResult.IsSuccess && designedCapResult.Value?.Count > 0)
+                {
+                    var dict = designedCapResult.Value[0];
+                    if (dict.TryGetValue("DesignedCapacity", out var val) && uint.TryParse(val?.ToString(), out uint cap))
+                    {
+                        model.DesignedCapacity = cap;
+                    }
+                    model.Manufacturer = dict.TryGetValue("OEMInformation", out var oem) ? oem?.ToString() ?? "Unknown" : "Unknown";
+                }
+
+                var currentCapResult = await _wmiService.QueryAsync(@"root\wmi", "SELECT * FROM MSBatteryClass_SystemBatteryState", ct);
+                if (currentCapResult.IsSuccess && currentCapResult.Value?.Count > 0)
+                {
+                    var dict = currentCapResult.Value[0];
+                    if (dict.TryGetValue("RemainingCapacity", out var val) && uint.TryParse(val?.ToString(), out uint cap))
+                    {
+                        model.CurrentCapacity = cap;
+                    }
                 }
             }
-
-            var designedCapResult = await _wmiService.QueryAsync(@"root\wmi", "SELECT * FROM MSBatteryClass_StaticData", ct);
-            if (designedCapResult.IsSuccess && designedCapResult.Value?.Count > 0)
+            catch (Exception ex)
             {
-                var dict = designedCapResult.Value[0];
-                if (dict.TryGetValue("DesignedCapacity", out var val) && uint.TryParse(val?.ToString(), out uint cap))
-                {
-                    model.DesignedCapacity = cap;
-                }
-                model.Manufacturer = dict.TryGetValue("OEMInformation", out var oem) ? oem?.ToString() ?? "Unknown" : "Unknown";
-            }
-
-            var currentCapResult = await _wmiService.QueryAsync(@"root\wmi", "SELECT * FROM MSBatteryClass_SystemBatteryState", ct);
-            if (currentCapResult.IsSuccess && currentCapResult.Value?.Count > 0)
-            {
-                var dict = currentCapResult.Value[0];
-                if (dict.TryGetValue("RemainingCapacity", out var val) && uint.TryParse(val?.ToString(), out uint cap))
-                {
-                    model.CurrentCapacity = cap;
-                }
+                _logger.LogWarning(ex, "Failed to query detailed battery capacity from root\\wmi (might require elevation or not be supported on this device).");
             }
 
             return Result<BatteryInfoModel>.Success(model);

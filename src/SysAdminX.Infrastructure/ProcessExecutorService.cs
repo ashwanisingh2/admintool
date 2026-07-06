@@ -100,9 +100,9 @@ public class ProcessExecutorService : IProcessExecutorService
                 throw;
             }
 
+            string output;
             if (process.ExitCode != 0)
             {
-                string output;
                 lock (outputLock)
                 {
                     output = outputBuilder.ToString();
@@ -112,7 +112,6 @@ public class ProcessExecutorService : IProcessExecutorService
                 return Result<string>.Failure($"Process exited with code {process.ExitCode}{(string.IsNullOrWhiteSpace(output) ? string.Empty : $": {output.Trim()}")}");
             }
 
-            string output;
             lock (outputLock)
             {
                 output = outputBuilder.ToString();

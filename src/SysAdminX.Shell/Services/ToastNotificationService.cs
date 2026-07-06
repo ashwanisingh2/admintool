@@ -10,6 +10,7 @@ using System.Windows;
 using System.Windows.Threading;
 using Microsoft.Extensions.Logging;
 using SysAdminX.Core.Interfaces;
+using Wpf.Ui;
 using Wpf.Ui.Controls;
 
 namespace SysAdminX.Shell.Services;
@@ -89,12 +90,12 @@ public class ToastNotificationService : IToastNotificationService
                     {
                         app.Dispatcher.BeginInvoke(new Action(() =>
                         {
-                            MessageBox.Show(
+                            System.Windows.MessageBox.Show(
                                 app.MainWindow,
                                 $"{title}\n\n{body}",
                                 severity == ToastSeverity.Error ? "Error" : "Warning",
-                                MessageBoxButton.OK,
-                                severity == ToastSeverity.Error ? MessageBoxImage.Error : MessageBoxImage.Warning);
+                                System.Windows.MessageBoxButton.OK,
+                                severity == ToastSeverity.Error ? System.Windows.MessageBoxImage.Error : System.Windows.MessageBoxImage.Warning);
                         }), DispatcherPriority.Normal);
                     }
                 }
@@ -109,7 +110,7 @@ public class ToastNotificationService : IToastNotificationService
             {
                 try
                 {
-                    _snackbarService.Show(title, body, icon, appearance);
+                    _snackbarService.Show(title, body, appearance, new SymbolIcon(icon), TimeSpan.FromSeconds(3));
                 }
                 catch (Exception ex)
                 {

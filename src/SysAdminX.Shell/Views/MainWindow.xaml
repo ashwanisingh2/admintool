@@ -81,14 +81,14 @@
             OpenPaneLength="260">
 
             <!-- Top of sidebar: global search box (Ctrl+F to focus) -->
-            <ui:NavigationView.PaneTop>
+            <ui:NavigationView.PaneHeader>
                 <ui:TextBox
                     x:Name="SidebarSearchBox"
                     PlaceholderText="Search modules... (Ctrl+F)"
                     Icon="{ui:SymbolIcon Search24}"
                     Margin="8,8,8,4"
                     KeyDown="SidebarSearchBox_KeyDown" />
-            </ui:NavigationView.PaneTop>
+            </ui:NavigationView.PaneHeader>
 
             <!-- Navigation Menu Items -->
             <ui:NavigationView.MenuItems>

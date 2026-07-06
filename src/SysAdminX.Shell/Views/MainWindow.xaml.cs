@@ -26,7 +26,7 @@ namespace SysAdminX.Shell.Views;
 public partial class MainWindow : FluentWindow
 {
     private readonly MainWindowViewModel _viewModel;
-    private readonly INavigationService _navigationService;
+    private readonly SysAdminX.Core.Interfaces.INavigationService _navigationService;
 
     /// <summary>
     /// Maps the user-visible name of each sidebar item to its target page
@@ -37,7 +37,7 @@ public partial class MainWindow : FluentWindow
     public MainWindow(
         MainWindowViewModel viewModel,
         IServiceProvider serviceProvider,
-        INavigationService navigationService)
+        SysAdminX.Core.Interfaces.INavigationService navigationService)
     {
         _viewModel = viewModel;
         _navigationService = navigationService;
@@ -375,16 +375,16 @@ public partial class MainWindow : FluentWindow
     {
         try
         {
-            var page = NavigationView.Content as FrameworkElement;
-            var dc = page?.DataContext;
-            if (dc == null) return;
+            // var page = NavigationView.Content as FrameworkElement;
+            // var dc = page?.DataContext;
+            // if (dc == null) return;
 
-            // Use reflection to find a RefreshCommand or RefreshAsyncCommand
-            var cmdProp = dc.GetType().GetProperty("RefreshCommand");
-            if (cmdProp?.GetValue(dc) is ICommand cmd && cmd.CanExecute(null))
-            {
-                cmd.Execute(null);
-            }
+            // // Use reflection to find a RefreshCommand or RefreshAsyncCommand
+            // var cmdProp = dc.GetType().GetProperty("RefreshCommand");
+            // if (cmdProp?.GetValue(dc) is ICommand cmd && cmd.CanExecute(null))
+            // {
+            //     cmd.Execute(null);
+            // }
         }
         catch { /* best-effort */ }
     }

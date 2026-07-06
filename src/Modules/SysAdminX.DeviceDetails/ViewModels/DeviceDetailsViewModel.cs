@@ -43,9 +43,6 @@ public partial class DeviceDetailsViewModel : ObservableObject
     private string _errorMessage = string.Empty;
 
     [ObservableProperty]
-    private bool _hasError;
-
-    [ObservableProperty]
     private bool _isSuccess;
 
     [ObservableProperty]
@@ -75,7 +72,6 @@ public partial class DeviceDetailsViewModel : ObservableObject
         if (IsLoading) return;
 
         IsLoading = true;
-        HasError = false;
         ErrorMessage = string.Empty;
 
         _logger.LogInformation("Loading device details...");
@@ -91,7 +87,6 @@ public partial class DeviceDetailsViewModel : ObservableObject
             }
             else
             {
-                HasError = true;
                 ErrorMessage = result.ErrorMessage ?? "Unknown error occurred while loading device details.";
                 _logger.LogError("Failed to load device details: {Error}", ErrorMessage);
             }
@@ -103,7 +98,6 @@ public partial class DeviceDetailsViewModel : ObservableObject
         catch (System.Exception ex)
         {
             _logger.LogError(ex, "Unexpected exception loading device details.");
-            HasError = true;
             ErrorMessage = ex.Message;
         }
         finally
@@ -124,7 +118,6 @@ public partial class DeviceDetailsViewModel : ObservableObject
         if (IsTrimRunning) return;
 
         IsSuccess = false;
-        HasError = false;
         IsTrimRunning = true;
 
         _logger.LogInformation("Running TRIM on {Drive}", driveLetter);
@@ -145,7 +138,6 @@ public partial class DeviceDetailsViewModel : ObservableObject
             {
                 _logger.LogError("TRIM failed for {Drive}: {Error}", driveLetter, result.ErrorMessage);
                 ErrorMessage = result.ErrorMessage ?? "Unknown error occurred while running TRIM.";
-                HasError = true;
                 _toastService.ShowError($"TRIM failed on {driveLetter}", ErrorMessage);
             }
         }
@@ -157,7 +149,6 @@ public partial class DeviceDetailsViewModel : ObservableObject
         {
             _logger.LogError(ex, "TRIM threw an exception for {Drive}", driveLetter);
             ErrorMessage = ex.Message;
-            HasError = true;
             _toastService.ShowError($"TRIM failed on {driveLetter}", ex.Message);
         }
         finally

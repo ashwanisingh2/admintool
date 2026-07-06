@@ -24,7 +24,7 @@ public partial class BrowserViewModel : ObservableObject
 {
     private readonly IBrowserRepairService _service;
     private readonly IToastNotificationService _toastService;
-    private readonly ILogger<BrowserViewModel> _logger;
+    private readonly ILogger _logger;
 
     public string Id { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
@@ -48,7 +48,7 @@ public partial class BrowserViewModel : ObservableObject
         BrowserRepairModel model,
         IBrowserRepairService service,
         IToastNotificationService toastService,
-        ILogger<BrowserViewModel> logger)
+        ILogger logger)
     {
         _service = service;
         _toastService = toastService;

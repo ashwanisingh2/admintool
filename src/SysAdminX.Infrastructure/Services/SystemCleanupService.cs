@@ -24,7 +24,7 @@ public class SystemCleanupService : ISystemCleanupService
         _logger = logger;
     }
 
-    public async Task<Result<IEnumerable<CleanupItemModel>>> GetCleanupItemsAsync()
+    public async Task<Result<IEnumerable<CleanupItemModel>>> GetCleanupItemsAsync(CancellationToken ct = default)
     {
         return await Task.Run(() =>
         {
@@ -106,7 +106,7 @@ public class SystemCleanupService : ISystemCleanupService
         });
     }
 
-    public async Task<Result<long>> CalculateSpaceAsync(IEnumerable<string> itemIds)
+    public async Task<Result<long>> CalculateSpaceAsync(IEnumerable<string> itemIds, CancellationToken ct = default)
     {
         return await Task.Run(() =>
         {
@@ -138,7 +138,7 @@ public class SystemCleanupService : ISystemCleanupService
         });
     }
 
-    public async Task<Result<bool>> PerformCleanupAsync(IEnumerable<string> itemIds)
+    public async Task<Result<bool>> PerformCleanupAsync(IEnumerable<string> itemIds, CancellationToken ct = default)
     {
         return await Task.Run(() =>
         {
@@ -209,24 +209,33 @@ public class SystemCleanupService : ISystemCleanupService
             long totalBytes = 0;
             var movedFiles = new List<(string OriginalPath, string BackupPath)>();
 
+            var enumOptions = new EnumerationOptions { IgnoreInaccessible = true, RecurseSubdirectories = true };
+
             foreach (var item in items)
             {
                 if (!item.IsSelected || string.IsNullOrEmpty(item.Path) || !Directory.Exists(item.Path))
                     continue;
 
-                foreach (var file in Directory.EnumerateFiles(item.Path, "*", SearchOption.AllDirectories))
+                try
                 {
-                    try
+                    foreach (var file in Directory.EnumerateFiles(item.Path, "*", enumOptions))
                     {
-                        var relativePath = Path.GetRelativePath(item.Path, file);
-                        var backupPath = Path.Combine(backupDir, relativePath);
-                        Directory.CreateDirectory(Path.GetDirectoryName(backupPath)!);
-                        File.Move(file, backupPath);
-                        totalBytes += new FileInfo(backupPath).Length;
-                        movedFiles.Add((file, backupPath));
+                        try
+                        {
+                            var relativePath = Path.GetRelativePath(item.Path, file);
+                            var backupPath = Path.Combine(backupDir, relativePath);
+                            Directory.CreateDirectory(Path.GetDirectoryName(backupPath)!);
+                            File.Move(file, backupPath);
+                            totalBytes += new FileInfo(backupPath).Length;
+                            movedFiles.Add((file, backupPath));
+                        }
+                        catch (IOException) { /* skip locked files */ }
+                        catch (UnauthorizedAccessException) { /* skip */ }
                     }
-                    catch (IOException) { /* skip locked files */ }
-                    catch (UnauthorizedAccessException) { /* skip */ }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to enumerate files in {Path}", item.Path);
                 }
             }
 
@@ -292,7 +301,8 @@ public class SystemCleanupService : ISystemCleanupService
         try
         {
             var dirInfo = new DirectoryInfo(path);
-            foreach (var fi in dirInfo.EnumerateFiles("*", SearchOption.AllDirectories))
+            var enumOptions = new EnumerationOptions { IgnoreInaccessible = true, RecurseSubdirectories = true };
+            foreach (var fi in dirInfo.EnumerateFiles("*", enumOptions))
             {
                 size += fi.Length;
             }

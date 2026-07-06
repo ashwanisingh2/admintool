@@ -157,7 +157,7 @@ public partial class LargeFileFinderViewModel : ObservableObject
 
         // Destructive confirmation — kept as a MessageBox because we genuinely
         // need a yes/no answer before deleting potentially gigabytes of data.
-        var totalBytes = selectedFiles.Sum(f => (long)f.SizeBytes);
+        var totalBytes = selectedFiles.Sum(f => (long)f.SizeInBytes);
         var totalMb = totalBytes / 1024.0 / 1024.0;
         if (MessageBox.Show(
             $"Are you sure you want to permanently delete {selectedFiles.Count} files ({totalMb:F1} MB)?\n\nThis cannot be undone.",
