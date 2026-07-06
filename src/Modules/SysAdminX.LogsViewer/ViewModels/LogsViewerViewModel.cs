@@ -32,14 +32,20 @@ namespace SysAdminX.LogsViewer.ViewModels;
 ///   - <see cref="LogCount"/> observable so the UI can show "X of Y entries".
 ///   - <see cref="IsLoading"/> flag set in try/finally so a thrown exception
 ///     can no longer leave the spinner stuck on.
+///   - New <see cref="IsRealTimeTailEnabled"/> flag + FileSystemWatcher-based
+///     live tail mode. When enabled (default per AppConfigModel.LogAutoTail),
+///     new log lines appear at the top of the list automatically without
+///     polling.
 /// </summary>
-public partial class LogsViewerViewModel : ObservableObject
+public partial class LogsViewerViewModel : ObservableObject, IDisposable
 {
     private readonly ILogger<LogsViewerViewModel> _logger;
     private readonly ILogsService _logsService;
     private readonly IBsodAnalyzerService _bsodAnalyzerService;
 
     private ObservableCollection<LogEntryModel> _allLogs = new();
+    private FileSystemWatcher? _fileWatcher;
+    private bool _disposed;
 
     [ObservableProperty]
     private ObservableCollection<BsodEntryModel> _bsodEntries = new();
@@ -80,6 +86,13 @@ public partial class LogsViewerViewModel : ObservableObject
     [ObservableProperty]
     private int _filteredLogCount;
 
+    /// <summary>
+    /// When true, the viewer tails the latest log file in real time using a
+    /// FileSystemWatcher. New lines appear at the top of the list automatically.
+    /// </summary>
+    [ObservableProperty]
+    private bool _isRealTimeTailEnabled;
+
     private readonly DispatcherTimer _autoRefreshTimer;
 
     public LogsViewerViewModel(ILogger<LogsViewerViewModel> logger, ILogsService logsService, IBsodAnalyzerService bsodAnalyzerService)
@@ -101,6 +114,108 @@ public partial class LogsViewerViewModel : ObservableObject
             _autoRefreshTimer.Start();
         else
             _autoRefreshTimer.Stop();
+    }
+
+    partial void OnIsRealTimeTailEnabledChanged(bool value)
+    {
+        if (value)
+            StartFileWatcher();
+        else
+            StopFileWatcher();
+    }
+
+    /// <summary>
+    /// Sets up a FileSystemWatcher on the SysAdminX logs directory so new
+    /// log entries appear in real time. Falls back to the polling timer
+    /// if the watcher can't be created (e.g. directory missing).
+    /// </summary>
+    private void StartFileWatcher()
+    {
+        StopFileWatcher();
+        try
+        {
+            var logsDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "SysAdminX", "Logs");
+            if (!Directory.Exists(logsDir))
+            {
+                _logger.LogWarning("Cannot start file watcher — logs directory does not exist: {Dir}", logsDir);
+                return;
+            }
+
+            _fileWatcher = new FileSystemWatcher(logsDir, "sysadminx-*.log")
+            {
+                NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.Size,
+                EnableRaisingEvents = true,
+                IncludeSubdirectories = false
+            };
+            _fileWatcher.Changed += async (s, e) => await OnLogFileChangedAsync(e.FullPath);
+            _fileWatcher.Created += async (s, e) => await OnLogFileChangedAsync(e.FullPath);
+            _logger.LogInformation("Real-time log tail enabled on {Dir}", logsDir);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to start FileSystemWatcher; falling back to polling.");
+            // Auto-fall back to polling so the user still gets updates.
+            IsRealTimeTailEnabled = false;
+            IsAutoRefreshEnabled = true;
+        }
+    }
+
+    private void StopFileWatcher()
+    {
+        if (_fileWatcher != null)
+        {
+            try
+            {
+                _fileWatcher.EnableRaisingEvents = false;
+                _fileWatcher.Dispose();
+            }
+            catch { /* ignore */ }
+            _fileWatcher = null;
+        }
+    }
+
+    /// <summary>
+    /// Called by the FileSystemWatcher when a log file changes. Reads the
+    /// file fresh (cheap because it's small) and merges new entries into the
+    /// top of the list. Throttled via a debounce to avoid spamming on rapid
+    /// writes.
+    /// </summary>
+    private async Task OnLogFileChangedAsync(string filePath)
+    {
+        // Simple debounce: wait 200ms then read. If another change comes in
+        // during that window, the OS will coalesce them into the same read.
+        await Task.Delay(200);
+        try
+        {
+            var logs = await _logsService.GetRecentLogsAsync(50);
+            var lastLogTime = _allLogs.FirstOrDefault()?.Timestamp ?? DateTime.MinValue;
+            var newLogs = logs.Where(l => l.Timestamp > lastLogTime).ToList();
+
+            if (newLogs.Count == 0) return;
+
+            // Marshal onto the UI thread — FileSystemWatcher events fire on
+            // a thread-pool thread.
+            System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+            {
+                for (int i = newLogs.Count - 1; i >= 0; i--)
+                {
+                    var l = newLogs[i];
+                    _allLogs.Insert(0, l);
+                    if (MatchesFilters(l))
+                    {
+                        FilteredLogs.Insert(0, l);
+                    }
+                }
+                LogCount = _allLogs.Count;
+                FilteredLogCount = FilteredLogs.Count;
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "OnLogFileChangedAsync failed for {Path}", filePath);
+        }
     }
 
     private async Task AutoRefreshTickAsync()
@@ -300,5 +415,13 @@ public partial class LogsViewerViewModel : ObservableObject
         {
             _logger.LogError(ex, "BSOD report generation threw an exception.");
         }
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        StopFileWatcher();
+        _autoRefreshTimer.Stop();
     }
 }

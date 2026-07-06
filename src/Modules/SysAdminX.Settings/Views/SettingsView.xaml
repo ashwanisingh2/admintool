@@ -77,13 +77,78 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            
+
                             <StackPanel Grid.Column="0">
                                 <TextBlock Text="Start on Boot" FontWeight="SemiBold" />
                                 <TextBlock Text="Launch SysAdminX automatically when Windows starts." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0" />
                             </StackPanel>
-                            
+
                             <ui:ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding Config.StartOnBoot}" />
+                        </Grid>
+
+                        <!-- Compact Sidebar -->
+                        <Grid Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Compact Sidebar" FontWeight="SemiBold" />
+                                <TextBlock Text="Show only icons in the sidebar to save horizontal space." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0" />
+                            </StackPanel>
+
+                            <ui:ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding Config.CompactSidebar}" />
+                        </Grid>
+
+                        <!-- Auto-tail logs -->
+                        <Grid Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Auto-tail Logs" FontWeight="SemiBold" />
+                                <TextBlock Text="Live-stream new log entries in the Logs Viewer using a file watcher." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0" />
+                            </StackPanel>
+
+                            <ui:ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding Config.LogAutoTail}" />
+                        </Grid>
+
+                        <!-- Check for updates on startup -->
+                        <Grid Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Check for Updates on Startup" FontWeight="SemiBold" />
+                                <TextBlock Text="Contact GitHub on launch to see if a newer release is available." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0" />
+                            </StackPanel>
+
+                            <ui:ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding Config.CheckForUpdatesOnStartup}" />
+                        </Grid>
+
+                        <!-- Check now button -->
+                        <Grid Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Check for Updates Now" FontWeight="SemiBold" />
+                                <TextBlock Text="{Binding UpdateStatusText, FallbackValue='Click to check GitHub for a newer release.'}"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap" />
+                            </StackPanel>
+
+                            <ui:Button Grid.Column="1" VerticalAlignment="Center"
+                                       Content="Check Now"
+                                       Icon="{ui:SymbolIcon ArrowSync24}"
+                                       Command="{Binding CheckForUpdatesCommand}"
+                                       IsEnabled="{Binding IsCheckingUpdates, Converter={StaticResource InverseBoolConverter}}" />
                         </Grid>
 
                         <!-- Reports Directory -->
@@ -92,14 +157,41 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="250" />
                             </Grid.ColumnDefinitions>
-                            
+
                             <StackPanel Grid.Column="0" Margin="0,0,16,0">
                                 <TextBlock Text="Default Reports Directory" FontWeight="SemiBold" />
                                 <TextBlock Text="Path where exported PDFs and JSONs are saved." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0" />
                             </StackPanel>
-                            
+
                             <ui:TextBox Grid.Column="1" VerticalAlignment="Center" Text="{Binding Config.DefaultExportDirectory}" />
                         </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- Modules -->
+                <TextBlock Text="Visible Modules" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,12" />
+                <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Padding="16" Margin="0,0,0,24">
+                    <StackPanel>
+                        <TextBlock Text="Toggle which modules appear in the sidebar. Hidden modules are still registered in DI — restart the app to apply changes."
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,12" />
+                        <ItemsControl ItemsSource="{Binding ModuleToggles}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="{Binding DisplayName}" VerticalAlignment="Center" />
+                                        <ui:ToggleSwitch Grid.Column="1" IsChecked="{Binding IsVisible, Mode=TwoWay}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                     </StackPanel>
                 </Border>
                 
