@@ -136,9 +136,9 @@ public class PatchManagerService : IPatchManagerService
         {
             _logger.LogInformation("Upgrading all software using winget");
             // Run interactive so the user can see the progress of winget
-            var result = await _processService.ExecuteAsync("cmd.exe", "/c winget upgrade --all --accept-source-agreements --accept-package-agreements & pause", requireElevation: true, ct: ct);
+            var result = await _processService.ExecuteAsync("cmd.exe", "/c winget upgrade --all --accept-source-agreements --accept-package-agreements", requireElevation: true, ct: ct);
             
-            return Result<bool>.Success(true);
+            return Result<bool>.Success(result.IsSuccess);
         }
         catch (Exception ex)
         {
@@ -216,6 +216,7 @@ for ($i = 0; $i -lt $updates.Count; $i++) {
             _logger.LogInformation("Installing missing Windows Updates");
             
             string resultFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $@"InstallUpdateResult_{Guid.NewGuid()}.json");
+            string safeResultFile = resultFile.Replace("'", "''");
             
             string psScript = $@"
 $updateSession = New-Object -ComObject Microsoft.Update.Session
@@ -227,7 +228,7 @@ $updates = $searchResult.Updates
 if ($updates.Count -eq 0) {{
     Write-Host 'No updates found to install.' -ForegroundColor Green
     $json = @{{ RebootRequired = $false; ResultCode = 2 }}
-    $json | ConvertTo-Json -Compress | Out-File -FilePath '{resultFile}' -Encoding UTF8
+    $json | ConvertTo-Json -Compress | Out-File -FilePath '{safeResultFile}' -Encoding UTF8
     Start-Sleep -Seconds 2
     exit 0
 }}
@@ -247,7 +248,7 @@ $json = @{{
     RebootRequired = $installResult.RebootRequired
     ResultCode = $installResult.ResultCode
 }}
-$json | ConvertTo-Json -Compress | Out-File -FilePath '{resultFile}' -Encoding UTF8
+$json | ConvertTo-Json -Compress | Out-File -FilePath '{safeResultFile}' -Encoding UTF8
 
 ";
             string tempFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "InstallUpdates.ps1");

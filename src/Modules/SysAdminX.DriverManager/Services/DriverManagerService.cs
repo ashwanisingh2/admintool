@@ -398,8 +398,6 @@ if ($Result.Updates.Count -eq 0) {
         Write-Host 'A reboot is required to finish installing drivers.' -ForegroundColor Red
     }
 }
-Write-Host 'Press any key to exit...'
-$null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
 ";
             await File.WriteAllTextAsync(psScriptPath, psScript, ct);
             

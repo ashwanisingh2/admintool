@@ -102,7 +102,14 @@ public class ProcessExecutorService : IProcessExecutorService
 
             if (process.ExitCode != 0)
             {
+                string output;
+                lock (outputLock)
+                {
+                    output = outputBuilder.ToString();
+                }
+
                 _logger.LogWarning("Process {FileName} exited with code {Code}", fileName, process.ExitCode);
+                return Result<string>.Failure($"Process exited with code {process.ExitCode}{(string.IsNullOrWhiteSpace(output) ? string.Empty : $": {output.Trim()}")}");
             }
 
             string output;
@@ -111,7 +118,7 @@ public class ProcessExecutorService : IProcessExecutorService
                 output = outputBuilder.ToString();
             }
 
-            return Result<string>.Success(requireElevation ? "Elevated command executed." : output);
+            return Result<string>.Success(output);
         }
         catch (OperationCanceledException)
         {
@@ -200,9 +207,10 @@ public class ProcessExecutorService : IProcessExecutorService
             if (process.ExitCode != 0)
             {
                 _logger.LogWarning("Process {FileName} exited with code {Code}", fileName, process.ExitCode);
+                return Result<bool>.Failure($"Process exited with code {process.ExitCode}");
             }
 
-            return Result<bool>.Success(process.ExitCode == 0);
+            return Result<bool>.Success(true);
         }
         catch (OperationCanceledException)
         {

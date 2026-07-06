@@ -31,8 +31,11 @@
             <ui:TextBox Grid.Column="0" 
                         Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}" 
                         PlaceholderText="Search apps..." 
-                        Icon="Search24" 
-                        Margin="0,0,8,0"/>
+                        Margin="0,0,8,0">
+                <ui:TextBox.Icon>
+                    <ui:SymbolIcon Symbol="Search24" />
+                </ui:TextBox.Icon>
+            </ui:TextBox>
 
             <ui:Button Grid.Column="1" 
                        Command="{Binding OpenStartupFolderCommand}" 
